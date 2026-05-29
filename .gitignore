@@ -25,6 +25,8 @@ artifacts/
 ## ASP.NET Core
 wwwroot/lib/
 appsettings.*.local.json
+appsettings.json
+appsettings.Development.json
 
 ## Secrets y configuración local
 **/Properties/serviceDependencies.local.json

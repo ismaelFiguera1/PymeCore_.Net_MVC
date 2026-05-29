@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PymeCore")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c48811c0671b4c573fe517292b96c73541755d28")]
 [assembly: System.Reflection.AssemblyProductAttribute("PymeCore")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PymeCore")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
