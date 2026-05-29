@@ -1,0 +1,52 @@
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Build output
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## ASP.NET Core
+wwwroot/lib/
+appsettings.*.local.json
+
+## Secrets y configuración local
+**/Properties/serviceDependencies.local.json
+**/Properties/serviceDependencies.local.json.user
+**/Properties/launchSettings.json
+
+## Entity Framework
+*.dtbcache.v2
+
+## Publicación
+[Pp]ublish/
+PublishProfiles/
+
+## Archivos locales del proyecto
+*.pdf
+AGENTS.md
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
