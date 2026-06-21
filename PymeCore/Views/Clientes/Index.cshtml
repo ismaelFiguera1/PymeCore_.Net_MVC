@@ -4,14 +4,14 @@
     ViewData["Title"] = "Clientes";
 }
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title mb-0">Listado de clientes</h3>
+<article class="card">
+    <header class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Listado de clientes</h2>
         <a asp-action="Create" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-lg me-1"></i> Nuevo cliente
         </a>
-    </div>
-    <div class="card-body p-0">
+    </header>
+    <section class="card-body p-0">
         <table class="table table-striped mb-0">
             <thead>
                 <tr>
@@ -63,5 +63,5 @@
                 }
             </tbody>
         </table>
-    </div>
-</div>
+    </section>
+</article>

@@ -1,0 +1,127 @@
+@model IEnumerable<PymeCore.Models.Proveedor>
+
+@{
+    ViewData["Title"] = "Proveedores";
+}
+
+<article class="card">
+    <header class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Listado de proveedores</h2>
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo proveedor
+        </a>
+    </header>
+    <section class="card-body border-bottom pb-3">
+        <form asp-action="Index" method="get" class="d-flex gap-2">
+            <input type="text" name="buscar" value="@ViewBag.Buscar"
+                   class="form-control form-control-sm" placeholder="Buscar por nombre o CIF..." />
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-search"></i>
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.Buscar as string))
+            {
+                <a asp-action="Index" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            }
+        </form>
+    </section>
+    <section class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>CIF</th>
+                    <th>Contacto</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var proveedor in Model)
+                {
+                    <tr class="@(!proveedor.Activo ? "table-secondary text-muted" : "")">
+                        <td>@proveedor.Nombre</td>
+                        <td>@(proveedor.Cif ?? "—")</td>
+                        <td>@(proveedor.PersonaContacto ?? "—")</td>
+                        <td>@proveedor.Email</td>
+                        <td>
+                            @if (proveedor.Activo)
+                            {
+                                <span class="badge bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@proveedor.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@proveedor.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            @if (proveedor.Activo)
+                            {
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalDesactivar"
+                                        data-id="@proveedor.Id"
+                                        data-nombre="@proveedor.Nombre">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <form asp-action="Activate" asp-route-id="@proveedor.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</article>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="modalDesactivar" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 class="modal-title fs-6">Confirmar desactivación</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </header>
+            <section class="modal-body">
+                ¿Desactivar a <strong id="modalNombre"></strong>?
+                <p class="text-muted small mb-0 mt-1">Esta acción se puede revertir editando el proveedor.</p>
+            </section>
+            <footer class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formDesactivar" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-slash-circle me-1"></i> Desactivar
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('modalDesactivar').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('modalNombre').textContent = btn.dataset.nombre;
+            document.getElementById('formDesactivar').action = '/Proveedores/Deactivate/' + btn.dataset.id;
+        });
+    </script>
+}

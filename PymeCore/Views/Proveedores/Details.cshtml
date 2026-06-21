@@ -1,7 +1,7 @@
-@model PymeCore.Models.Cliente
+@model PymeCore.Models.Proveedor
 
 @{
-    ViewData["Title"] = "Ficha de cliente";
+    ViewData["Title"] = "Ficha de proveedor";
 }
 
 <article class="card" style="max-width: 600px;">
@@ -19,20 +19,17 @@
     <section class="card-body">
         <address>
             <dl class="row mb-0">
-                <dt class="col-sm-4">NIF</dt>
-                <dd class="col-sm-8">@(Model.Nif ?? "—")</dd>
+                <dt class="col-sm-4">CIF</dt>
+                <dd class="col-sm-8">@(Model.Cif ?? "—")</dd>
+
+                <dt class="col-sm-4">Persona de contacto</dt>
+                <dd class="col-sm-8">@(Model.PersonaContacto ?? "—")</dd>
 
                 <dt class="col-sm-4">Email</dt>
                 <dd class="col-sm-8">@Model.Email</dd>
 
                 <dt class="col-sm-4">Teléfono</dt>
                 <dd class="col-sm-8">@(Model.Telefono ?? "—")</dd>
-
-                <dt class="col-sm-4">Dirección</dt>
-                <dd class="col-sm-8">@(Model.Direccion ?? "—")</dd>
-
-                <dt class="col-sm-4">Ciudad</dt>
-                <dd class="col-sm-8">@(Model.Ciudad ?? "—")</dd>
             </dl>
         </address>
     </section>

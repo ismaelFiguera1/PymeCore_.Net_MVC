@@ -12,5 +12,6 @@ namespace PymeCore.Data
         }
 
         public DbSet<Cliente> Clientes { get; set; }
+        public DbSet<Proveedor> Proveedores { get; set; }
     }
 }
