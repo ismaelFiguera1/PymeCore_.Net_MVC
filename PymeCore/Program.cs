@@ -16,6 +16,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ClienteService>();
+builder.Services.AddScoped<ProveedorService>();
 
 var app = builder.Build();
 
@@ -26,6 +27,7 @@ if (app.Environment.IsDevelopment())
     context.Database.Migrate();
 
     context.Clientes.RemoveRange(context.Clientes);
+    context.Proveedores.RemoveRange(context.Proveedores);
     context.SaveChanges();
 
     context.Clientes.AddRange(
@@ -34,6 +36,14 @@ if (app.Environment.IsDevelopment())
         new Cliente { Nombre = "Servicios Norte SL",    Nif = "34567890C", Email = "info@snorte.com",        Telefono = "634567890", Ciudad = "Bilbao",    Activo = true  },
         new Cliente { Nombre = "Distribuciones Sur SA", Nif = "45678901D", Email = "sur@distribuciones.com", Telefono = "645678901", Ciudad = "Sevilla",   Activo = true  },
         new Cliente { Nombre = "Antigua Empresa SL",    Nif = "56789012E", Email = "antigua@empresa.com",    Telefono = "656789012", Ciudad = "Valencia",  Activo = false }
+    );
+
+    context.Proveedores.AddRange(
+        new Proveedor { Nombre = "Suministros Industriales SA", Cif = "A12345678", PersonaContacto = "Carlos Ruiz",   Email = "carlos@suministros.com",  Telefono = "911234567", Activo = true  },
+        new Proveedor { Nombre = "Materiales del Norte SL",     Cif = "B23456789", PersonaContacto = "Ana Martínez",  Email = "ana@mnorte.com",          Telefono = "922345678", Activo = true  },
+        new Proveedor { Nombre = "Tech Components SL",          Cif = "B34567890", PersonaContacto = "Luis García",   Email = "luis@techcomponents.com",  Telefono = "933456789", Activo = true  },
+        new Proveedor { Nombre = "Logística Express SA",        Cif = "A45678901", PersonaContacto = "María López",   Email = "maria@logexpress.com",     Telefono = "944567890", Activo = true  },
+        new Proveedor { Nombre = "Proveedor Inactivo SL",       Cif = "C56789012", PersonaContacto = null,            Email = "info@inactivo.com",        Telefono = null,        Activo = false }
     );
     context.SaveChanges();
 }

@@ -1,12 +1,12 @@
-@model PymeCore.ViewModels.Clientes.ClienteFormViewModel
+@model PymeCore.ViewModels.Proveedores.ProveedorFormViewModel
 
 @{
-    ViewData["Title"] = "Nuevo cliente";
+    ViewData["Title"] = "Nuevo proveedor";
 }
 
 <article class="card" style="max-width: 600px;">
     <header class="card-header">
-        <h2 class="card-title mb-0">Nuevo cliente</h2>
+        <h2 class="card-title mb-0">Nuevo proveedor</h2>
     </header>
     <form asp-action="Create" method="post">
         <section class="card-body">
@@ -16,8 +16,13 @@
                 <span asp-validation-for="Nombre" class="text-danger small"></span>
             </div>
             <div class="mb-3">
-                <label asp-for="Nif" class="form-label"></label>
-                <input asp-for="Nif" class="form-control" />
+                <label asp-for="Cif" class="form-label"></label>
+                <input asp-for="Cif" class="form-control" />
+                <span asp-validation-for="Cif" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="PersonaContacto" class="form-label"></label>
+                <input asp-for="PersonaContacto" class="form-control" />
             </div>
             <div class="mb-3">
                 <label asp-for="Email" class="form-label"></label>
@@ -27,14 +32,6 @@
             <div class="mb-3">
                 <label asp-for="Telefono" class="form-label"></label>
                 <input asp-for="Telefono" class="form-control" />
-            </div>
-            <div class="mb-3">
-                <label asp-for="Direccion" class="form-label"></label>
-                <input asp-for="Direccion" class="form-control" />
-            </div>
-            <div class="mb-3">
-                <label asp-for="Ciudad" class="form-label"></label>
-                <input asp-for="Ciudad" class="form-control" />
             </div>
         </section>
         <footer class="card-footer">
