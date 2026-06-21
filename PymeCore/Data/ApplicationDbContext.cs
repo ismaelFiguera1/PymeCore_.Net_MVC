@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using PymeCore.Models;
 
 namespace PymeCore.Data
 {
@@ -9,5 +10,7 @@ namespace PymeCore.Data
             : base(options)
         {
         }
+
+        public DbSet<Cliente> Clientes { get; set; }
     }
 }

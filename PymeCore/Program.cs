@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PymeCore.Data;
+using PymeCore.Models;
+using PymeCore.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +15,28 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<ClienteService>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    context.Database.Migrate();
+
+    context.Clientes.RemoveRange(context.Clientes);
+    context.SaveChanges();
+
+    context.Clientes.AddRange(
+        new Cliente { Nombre = "Empresa ABC SL",        Nif = "12345678A", Email = "abc@empresa.com",       Telefono = "612345678", Ciudad = "Madrid",    Activo = true  },
+        new Cliente { Nombre = "Comercial XYZ SA",      Nif = "23456789B", Email = "xyz@comercial.com",      Telefono = "623456789", Ciudad = "Barcelona", Activo = true  },
+        new Cliente { Nombre = "Servicios Norte SL",    Nif = "34567890C", Email = "info@snorte.com",        Telefono = "634567890", Ciudad = "Bilbao",    Activo = true  },
+        new Cliente { Nombre = "Distribuciones Sur SA", Nif = "45678901D", Email = "sur@distribuciones.com", Telefono = "645678901", Ciudad = "Sevilla",   Activo = true  },
+        new Cliente { Nombre = "Antigua Empresa SL",    Nif = "56789012E", Email = "antigua@empresa.com",    Telefono = "656789012", Ciudad = "Valencia",  Activo = false }
+    );
+    context.SaveChanges();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
