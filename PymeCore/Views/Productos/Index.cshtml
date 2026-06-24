@@ -1,0 +1,78 @@
+@model IEnumerable<PymeCore.Models.Producto>
+
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<article class="card">
+    <header class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Catálogo de productos</h2>
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Nuevo producto
+        </a>
+    </header>
+    <section class="card-body border-bottom pb-3">
+        <form asp-action="Index" method="get" class="d-flex gap-2">
+            <input type="text" name="buscar" value="@ViewBag.Buscar"
+                   class="form-control form-control-sm" placeholder="Buscar por nombre o SKU..." />
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-search"></i>
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.Buscar as string))
+            {
+                <a asp-action="Index" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            }
+        </form>
+    </section>
+    <section class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>SKU</th>
+                    <th>Precio venta</th>
+                    <th>Stock</th>
+                    <th>Proveedor</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr class="@(p.BajoStock ? "table-warning" : "")">
+                        <td>
+                            @p.Nombre
+                            @if (p.BajoStock)
+                            {
+                                <span class="badge bg-danger ms-1"
+                                      title="Stock bajo: @p.StockActual ud. (mín. @p.StockMinimo)">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Bajo stock
+                                </span>
+                            }
+                        </td>
+                        <td><code>@p.Sku</code></td>
+                        <td>@p.PrecioVenta.ToString("N2") €</td>
+                        <td>
+                            @p.StockActual
+                            @if (p.BajoStock)
+                            {
+                                <span class="text-danger small">/ mín. @p.StockMinimo</span>
+                            }
+                        </td>
+                        <td>@(p.Proveedor?.Nombre ?? "—")</td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</article>
