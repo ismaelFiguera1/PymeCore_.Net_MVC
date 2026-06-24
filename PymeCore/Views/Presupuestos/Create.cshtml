@@ -1,0 +1,49 @@
+@model PymeCore.ViewModels.Presupuestos.PresupuestoFormViewModel
+
+@{
+    ViewData["Title"] = "Nuevo presupuesto";
+}
+
+<article class="card" style="max-width: 600px;">
+    <header class="card-header">
+        <h2 class="card-title mb-0">Nuevo presupuesto</h2>
+    </header>
+    <form asp-action="Create" method="post">
+        <section class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Número</label>
+                <input type="text" class="form-control" value="Se generará automáticamente" disabled />
+            </div>
+            <div class="mb-3">
+                <label asp-for="ClienteId" class="form-label"></label>
+                <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select">
+                    <option value="">— Selecciona un cliente —</option>
+                </select>
+                <span asp-validation-for="ClienteId" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Estado" class="form-label"></label>
+                <select asp-for="Estado" class="form-select"
+                        asp-items="Html.GetEnumSelectList<PymeCore.Models.EstadoPresupuesto>()">
+                </select>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Observaciones" class="form-label"></label>
+                <textarea asp-for="Observaciones" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Observaciones" class="text-danger small"></span>
+            </div>
+        </section>
+        <footer class="card-footer">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm ms-1">
+                <i class="bi bi-x-lg me-1"></i> Cancelar
+            </a>
+        </footer>
+    </form>
+</article>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
