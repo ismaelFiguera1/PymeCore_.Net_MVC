@@ -17,6 +17,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProveedorService>();
+builder.Services.AddScoped<ProductoService>();
 
 var app = builder.Build();
 
@@ -26,6 +27,7 @@ if (app.Environment.IsDevelopment())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
 
+    context.Productos.RemoveRange(context.Productos);
     context.Clientes.RemoveRange(context.Clientes);
     context.Proveedores.RemoveRange(context.Proveedores);
     context.SaveChanges();
@@ -44,6 +46,19 @@ if (app.Environment.IsDevelopment())
         new Proveedor { Nombre = "Tech Components SL",          Cif = "B34567890", PersonaContacto = "Luis García",   Email = "luis@techcomponents.com",  Telefono = "933456789", Activo = true  },
         new Proveedor { Nombre = "Logística Express SA",        Cif = "A45678901", PersonaContacto = "María López",   Email = "maria@logexpress.com",     Telefono = "944567890", Activo = true  },
         new Proveedor { Nombre = "Proveedor Inactivo SL",       Cif = "C56789012", PersonaContacto = null,            Email = "info@inactivo.com",        Telefono = null,        Activo = false }
+    );
+    context.SaveChanges();
+
+    var pSuministros = context.Proveedores.First(p => p.Nombre == "Suministros Industriales SA");
+    var pTech        = context.Proveedores.First(p => p.Nombre == "Tech Components SL");
+    var pMateriales  = context.Proveedores.First(p => p.Nombre == "Materiales del Norte SL");
+
+    context.Productos.AddRange(
+        new Producto { Nombre = "Tornillo M8 x 30",        Sku = "TOR-M8-30",   PrecioCoste = 0.05m,  PrecioVenta = 0.12m,  StockActual = 500,  StockMinimo = 200, ProveedorId = pSuministros.Id },
+        new Producto { Nombre = "Cable USB-C 1m",          Sku = "CAB-USBC-1M", PrecioCoste = 2.50m,  PrecioVenta = 6.99m,  StockActual = 80,   StockMinimo = 50,  ProveedorId = pTech.Id },
+        new Producto { Nombre = "Panel de madera 200x100", Sku = "PAN-MAD-200",  PrecioCoste = 15.00m, PrecioVenta = 32.00m, StockActual = 12,   StockMinimo = 20,  ProveedorId = pMateriales.Id },
+        new Producto { Nombre = "Teclado inalámbrico",     Sku = "TEC-INAL-01", PrecioCoste = 18.00m, PrecioVenta = 39.99m, StockActual = 3,    StockMinimo = 10,  ProveedorId = pTech.Id },
+        new Producto { Nombre = "Cinta de embalaje 50m",  Sku = "CIN-EMB-50",  PrecioCoste = 0.80m,  PrecioVenta = 1.99m,  StockActual = 150,  StockMinimo = 50,  ProveedorId = null }
     );
     context.SaveChanges();
 }

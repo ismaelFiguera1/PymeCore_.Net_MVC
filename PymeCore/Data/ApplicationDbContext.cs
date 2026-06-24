@@ -13,5 +13,15 @@ namespace PymeCore.Data
 
         public DbSet<Cliente> Clientes { get; set; }
         public DbSet<Proveedor> Proveedores { get; set; }
+        public DbSet<Producto> Productos { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<Producto>()
+                .HasIndex(p => p.Sku)
+                .IsUnique();
+        }
     }
 }
