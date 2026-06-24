@@ -1,0 +1,76 @@
+@model List<PymeCore.Models.MovimientoStock>
+
+@{
+    var producto = (PymeCore.Models.Producto)ViewBag.Producto;
+    ViewData["Title"] = $"Movimientos — {producto.Nombre}";
+}
+
+<article class="card">
+    <header class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="card-title mb-0">Movimientos de stock</h2>
+            <small class="text-muted">@producto.Nombre · Stock actual: <strong>@producto.StockActual unidades</strong></small>
+        </div>
+        <a asp-action="Create" asp-route-productoId="@producto.Id" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Nuevo movimiento
+        </a>
+    </header>
+
+    @if (!Model.Any())
+    {
+        <section class="card-body">
+            <p class="text-muted mb-0">No hay movimientos registrados para este producto.</p>
+        </section>
+    }
+    else
+    {
+        <section class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Cantidad</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model)
+                    {
+                        <tr>
+                            <td>@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @{
+                                    var (badgeClass, icono) = m.Tipo switch
+                                    {
+                                        PymeCore.Models.TipoMovimiento.Entrada    => ("bg-success", "bi-arrow-down-circle"),
+                                        PymeCore.Models.TipoMovimiento.Salida     => ("bg-danger",  "bi-arrow-up-circle"),
+                                        PymeCore.Models.TipoMovimiento.Devolucion => ("bg-info",    "bi-arrow-counterclockwise"),
+                                        PymeCore.Models.TipoMovimiento.Ajuste     => ("bg-warning text-dark", "bi-sliders"),
+                                        _                                          => ("bg-secondary", "bi-question")
+                                    };
+                                }
+                                <span class="badge @badgeClass">
+                                    <i class="bi @icono me-1"></i>@m.Tipo
+                                </span>
+                            </td>
+                            <td>
+                                @{
+                                    var signo = m.Tipo == PymeCore.Models.TipoMovimiento.Salida ? "-" : "+";
+                                }
+                                @signo@Math.Abs(m.Cantidad)
+                            </td>
+                            <td>@(m.Motivo ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <footer class="card-footer">
+        <a asp-controller="Productos" asp-action="Details" asp-route-id="@producto.Id" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Volver al producto
+        </a>
+    </footer>
+</article>

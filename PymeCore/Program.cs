@@ -18,6 +18,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<ProductoService>();
+builder.Services.AddScoped<StockService>();
 
 var app = builder.Build();
 
