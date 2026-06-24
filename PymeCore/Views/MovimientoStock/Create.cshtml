@@ -1,0 +1,56 @@
+@model PymeCore.ViewModels.Stock.MovimientoStockFormViewModel
+
+@{
+    ViewData["Title"] = $"Nuevo movimiento — {Model.NombreProducto}";
+}
+
+<article class="card" style="max-width: 520px;">
+    <header class="card-header">
+        <h2 class="card-title mb-0 fs-5">Nuevo movimiento de stock</h2>
+        <small class="text-muted">@Model.NombreProducto · Stock actual: <strong>@Model.StockActual unidades</strong></small>
+    </header>
+    <form asp-action="Create" method="post">
+        <input type="hidden" asp-for="ProductoId" />
+        <input type="hidden" asp-for="NombreProducto" />
+        <input type="hidden" asp-for="StockActual" />
+
+        <section class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+            <div class="mb-3">
+                <label asp-for="Tipo" class="form-label"></label>
+                <select asp-for="Tipo" class="form-select"
+                        asp-items="Html.GetEnumSelectList<PymeCore.Models.TipoMovimiento>()">
+                    <option value="">-- Selecciona tipo --</option>
+                </select>
+                <span asp-validation-for="Tipo" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Cantidad" class="form-label"></label>
+                <input asp-for="Cantidad" type="number" class="form-control"
+                       placeholder="Para Ajuste: negativo resta, positivo suma" />
+                <span asp-validation-for="Cantidad" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Motivo" class="form-label"></label>
+                <input asp-for="Motivo" type="text" class="form-control" placeholder="Opcional" />
+                <span asp-validation-for="Motivo" class="text-danger small"></span>
+            </div>
+        </section>
+
+        <footer class="card-footer">
+            <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-check-circle me-1"></i> Registrar
+            </button>
+            <a asp-action="Index" asp-route-productoId="@Model.ProductoId" class="btn btn-outline-secondary btn-sm ms-1">
+                Cancelar
+            </a>
+        </footer>
+    </form>
+</article>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

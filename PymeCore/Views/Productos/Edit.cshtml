@@ -36,8 +36,11 @@
             <div class="row">
                 <div class="col mb-3">
                     <label asp-for="StockActual" class="form-label"></label>
-                    <input asp-for="StockActual" class="form-control" type="number" min="0" />
-                    <span asp-validation-for="StockActual" class="text-danger small"></span>
+                    <input asp-for="StockActual" class="form-control" type="number" readonly />
+                    <small class="text-muted">
+                        El stock solo cambia mediante
+                        <a asp-controller="MovimientoStock" asp-action="Index" asp-route-productoId="@Model.Id">movimientos</a>.
+                    </small>
                 </div>
                 <div class="col mb-3">
                     <label asp-for="StockMinimo" class="form-label"></label>

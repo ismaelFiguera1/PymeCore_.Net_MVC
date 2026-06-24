@@ -10,11 +10,13 @@ namespace PymeCore.Controllers
     {
         private readonly ProductoService _productoService;
         private readonly ProveedorService _proveedorService;
+        private readonly StockService _stockService;
 
-        public ProductosController(ProductoService productoService, ProveedorService proveedorService)
+        public ProductosController(ProductoService productoService, ProveedorService proveedorService, StockService stockService)
         {
             _productoService = productoService;
             _proveedorService = proveedorService;
+            _stockService = stockService;
         }
 
         public async Task<IActionResult> Index(string? buscar)
@@ -56,12 +58,24 @@ namespace PymeCore.Controllers
                 Sku         = vm.Sku,
                 PrecioCoste = vm.PrecioCoste,
                 PrecioVenta = vm.PrecioVenta,
-                StockActual = vm.StockActual,
+                StockActual = 0,
                 StockMinimo = vm.StockMinimo,
                 ProveedorId = vm.ProveedorId
             };
 
             await _productoService.CreateAsync(producto);
+
+            if (vm.StockActual > 0)
+            {
+                await _stockService.RegistrarMovimientoAsync(new Models.MovimientoStock
+                {
+                    ProductoId = producto.Id,
+                    Tipo       = Models.TipoMovimiento.Entrada,
+                    Cantidad   = vm.StockActual,
+                    Motivo     = "Stock inicial"
+                });
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -108,7 +122,6 @@ namespace PymeCore.Controllers
             producto.Sku         = vm.Sku;
             producto.PrecioCoste = vm.PrecioCoste;
             producto.PrecioVenta = vm.PrecioVenta;
-            producto.StockActual = vm.StockActual;
             producto.StockMinimo = vm.StockMinimo;
             producto.ProveedorId = vm.ProveedorId;
 
