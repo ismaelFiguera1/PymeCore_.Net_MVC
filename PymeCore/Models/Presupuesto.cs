@@ -32,5 +32,7 @@ namespace PymeCore.Models
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal Total { get; set; }
+
+        public ICollection<LineaPresupuesto> Lineas { get; set; } = new List<LineaPresupuesto>();
     }
 }

@@ -10,11 +10,13 @@ namespace PymeCore.Controllers
     {
         private readonly PresupuestoService _presupuestoService;
         private readonly ClienteService _clienteService;
+        private readonly ProductoService _productoService;
 
-        public PresupuestosController(PresupuestoService presupuestoService, ClienteService clienteService)
+        public PresupuestosController(PresupuestoService presupuestoService, ClienteService clienteService, ProductoService productoService)
         {
             _presupuestoService = presupuestoService;
             _clienteService = clienteService;
+            _productoService = productoService;
         }
 
         public async Task<IActionResult> Index(string? buscar)
@@ -28,6 +30,9 @@ namespace PymeCore.Controllers
         {
             var presupuesto = await _presupuestoService.GetByIdAsync(id);
             if (presupuesto is null) return NotFound();
+
+            await CargarProductosAsync();
+            ViewBag.LineaVm = new LineaPresupuestoFormViewModel { PresupuestoId = id };
             return View(presupuesto);
         }
 
@@ -58,7 +63,7 @@ namespace PymeCore.Controllers
             };
 
             await _presupuestoService.CreateAsync(presupuesto);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id = presupuesto.Id });
         }
 
         public async Task<IActionResult> Edit(int id)
@@ -99,7 +104,46 @@ namespace PymeCore.Controllers
             presupuesto.Observaciones = vm.Observaciones;
 
             await _presupuestoService.UpdateAsync(presupuesto);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AgregarLinea(LineaPresupuestoFormViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Revisa los datos de la línea.";
+                return RedirectToAction(nameof(Details), new { id = vm.PresupuestoId });
+            }
+
+            var linea = new LineaPresupuesto
+            {
+                PresupuestoId  = vm.PresupuestoId,
+                ProductoId     = vm.ProductoId!.Value,
+                Descripcion    = vm.Descripcion,
+                Cantidad       = vm.Cantidad,
+                PrecioUnitario = vm.PrecioUnitario
+            };
+
+            await _presupuestoService.AgregarLineaAsync(linea);
+            return RedirectToAction(nameof(Details), new { id = vm.PresupuestoId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarLinea(int lineaId, int presupuestoId)
+        {
+            await _presupuestoService.EliminarLineaAsync(lineaId);
+            return RedirectToAction(nameof(Details), new { id = presupuestoId });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPrecioProducto(int productoId)
+        {
+            var producto = await _productoService.GetByIdAsync(productoId);
+            if (producto is null) return NotFound();
+            return Json(new { precio = producto.PrecioVenta });
         }
 
         private async Task CargarClientesAsync()
@@ -108,6 +152,12 @@ namespace PymeCore.Controllers
                 .Where(c => c.Activo)
                 .ToList();
             ViewBag.Clientes = new SelectList(clientes, "Id", "Nombre");
+        }
+
+        private async Task CargarProductosAsync()
+        {
+            var productos = await _productoService.GetAllAsync();
+            ViewBag.Productos = new SelectList(productos, "Id", "Nombre");
         }
     }
 }

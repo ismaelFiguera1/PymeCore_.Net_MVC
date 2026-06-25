@@ -32,6 +32,8 @@ namespace PymeCore.Services
         {
             return await _context.Presupuestos
                 .Include(p => p.Cliente)
+                .Include(p => p.Lineas)
+                    .ThenInclude(l => l.Producto)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
@@ -62,6 +64,37 @@ namespace PymeCore.Services
         public async Task UpdateAsync(Presupuesto presupuesto)
         {
             _context.Presupuestos.Update(presupuesto);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AgregarLineaAsync(LineaPresupuesto linea)
+        {
+            linea.Subtotal = linea.Cantidad * linea.PrecioUnitario;
+            _context.LineasPresupuesto.Add(linea);
+            await _context.SaveChangesAsync();
+            await RecalcularTotalAsync(linea.PresupuestoId);
+        }
+
+        public async Task EliminarLineaAsync(int lineaId)
+        {
+            var linea = await _context.LineasPresupuesto.FindAsync(lineaId);
+            if (linea is null) return;
+
+            var presupuestoId = linea.PresupuestoId;
+            _context.LineasPresupuesto.Remove(linea);
+            await _context.SaveChangesAsync();
+            await RecalcularTotalAsync(presupuestoId);
+        }
+
+        private async Task RecalcularTotalAsync(int presupuestoId)
+        {
+            var presupuesto = await _context.Presupuestos
+                .Include(p => p.Lineas)
+                .FirstOrDefaultAsync(p => p.Id == presupuestoId);
+
+            if (presupuesto is null) return;
+
+            presupuesto.Total = presupuesto.Lineas.Sum(l => l.Subtotal);
             await _context.SaveChangesAsync();
         }
     }
