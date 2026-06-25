@@ -17,6 +17,8 @@ namespace PymeCore.Data
         public DbSet<MovimientoStock> MovimientosStock { get; set; }
         public DbSet<Presupuesto> Presupuestos { get; set; }
         public DbSet<LineaPresupuesto> LineasPresupuesto { get; set; }
+        public DbSet<Pedido> Pedidos { get; set; }
+        public DbSet<LineaPedido> LineasPedido { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -25,6 +27,12 @@ namespace PymeCore.Data
             builder.Entity<Producto>()
                 .HasIndex(p => p.Sku)
                 .IsUnique();
+
+            builder.Entity<Pedido>()
+                .HasOne(p => p.PresupuestoOrigen)
+                .WithMany()
+                .HasForeignKey(p => p.PresupuestoOrigenId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

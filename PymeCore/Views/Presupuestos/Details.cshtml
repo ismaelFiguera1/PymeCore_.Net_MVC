@@ -84,6 +84,24 @@
             </button>
         }
 
+        @if (Model.Estado == EstadoPresupuesto.Aceptado && Model.PedidoId is null)
+        {
+            <form asp-controller="Pedidos" asp-action="ConvertirDesdePresupuesto" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="presupuestoId" value="@Model.Id" />
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="bi bi-cart-check me-1"></i> Convertir en Pedido
+                </button>
+            </form>
+        }
+
+        @if (Model.Estado == EstadoPresupuesto.Aceptado && Model.PedidoId is not null)
+        {
+            <a asp-controller="Pedidos" asp-action="Details" asp-route-id="@Model.PedidoId" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-cart me-1"></i> Ver Pedido
+            </a>
+        }
+
         @if (Model.Estado == EstadoPresupuesto.Rechazado)
         {
             <form asp-action="Duplicar" asp-route-id="@Model.Id" method="post" class="d-inline">
