@@ -22,6 +22,7 @@ builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<StockService>();
 builder.Services.AddScoped<PresupuestoService>();
+builder.Services.AddScoped<PedidoService>();
 
 var app = builder.Build();
 

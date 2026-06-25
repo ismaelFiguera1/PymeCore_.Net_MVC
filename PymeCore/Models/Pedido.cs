@@ -3,15 +3,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PymeCore.Models
 {
-    public enum EstadoPresupuesto
+    public enum EstadoPedido
     {
-        Borrador,
-        Enviado,
-        Aceptado,
-        Rechazado
+        Pendiente,
+        EnPreparacion,
+        Completado,
+        Cancelado
     }
 
-    public class Presupuesto
+    public class Pedido
     {
         public int Id { get; set; }
 
@@ -23,9 +23,12 @@ namespace PymeCore.Models
         public int ClienteId { get; set; }
         public Cliente? Cliente { get; set; }
 
+        public int PresupuestoOrigenId { get; set; }
+        public Presupuesto? PresupuestoOrigen { get; set; }
+
         public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
-        public EstadoPresupuesto Estado { get; set; } = EstadoPresupuesto.Borrador;
+        public EstadoPedido Estado { get; set; } = EstadoPedido.Pendiente;
 
         [MaxLength(500)]
         public string? Observaciones { get; set; }
@@ -33,8 +36,6 @@ namespace PymeCore.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal Total { get; set; }
 
-        public ICollection<LineaPresupuesto> Lineas { get; set; } = new List<LineaPresupuesto>();
-
-        public int? PedidoId { get; set; }
+        public ICollection<LineaPedido> Lineas { get; set; } = new List<LineaPedido>();
     }
 }
