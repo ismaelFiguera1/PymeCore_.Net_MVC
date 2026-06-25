@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using PymeCore.Data;
 using PymeCore.Models;
@@ -79,6 +81,13 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(CultureInfo.InvariantCulture),
+    SupportedCultures     = new[] { CultureInfo.InvariantCulture },
+    SupportedUICultures   = new[] { CultureInfo.InvariantCulture }
+});
 
 app.UseRouting();
 

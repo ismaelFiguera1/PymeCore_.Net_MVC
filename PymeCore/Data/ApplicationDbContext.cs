@@ -16,6 +16,7 @@ namespace PymeCore.Data
         public DbSet<Producto> Productos { get; set; }
         public DbSet<MovimientoStock> MovimientosStock { get; set; }
         public DbSet<Presupuesto> Presupuestos { get; set; }
+        public DbSet<LineaPresupuesto> LineasPresupuesto { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
