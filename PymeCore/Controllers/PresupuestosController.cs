@@ -71,6 +71,12 @@ namespace PymeCore.Controllers
             var presupuesto = await _presupuestoService.GetByIdAsync(id);
             if (presupuesto is null) return NotFound();
 
+            if (presupuesto.Estado is EstadoPresupuesto.Aceptado or EstadoPresupuesto.Rechazado)
+            {
+                TempData["Error"] = $"Un presupuesto {presupuesto.Estado} no puede editarse.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             var vm = new PresupuestoFormViewModel
             {
                 Id            = presupuesto.Id,
@@ -99,8 +105,10 @@ namespace PymeCore.Controllers
             var presupuesto = await _presupuestoService.GetByIdAsync(id);
             if (presupuesto is null) return NotFound();
 
+            if (presupuesto.Estado is EstadoPresupuesto.Aceptado or EstadoPresupuesto.Rechazado)
+                return BadRequest();
+
             presupuesto.ClienteId     = vm.ClienteId!.Value;
-            presupuesto.Estado        = vm.Estado;
             presupuesto.Observaciones = vm.Observaciones;
 
             await _presupuestoService.UpdateAsync(presupuesto);
@@ -109,8 +117,56 @@ namespace PymeCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Enviar(int id)
+        {
+            var (ok, error) = await _presupuestoService.EnviarAsync(id);
+            if (ok) TempData["Success"] = "Presupuesto enviado al cliente.";
+            else    TempData["Error"]   = error;
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Aceptar(int id)
+        {
+            var (ok, error) = await _presupuestoService.AceptarAsync(id);
+            if (ok) TempData["Success"] = "Presupuesto aceptado.";
+            else    TempData["Error"]   = error;
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Rechazar(int id)
+        {
+            var (ok, error) = await _presupuestoService.RechazarAsync(id);
+            if (ok) TempData["Success"] = "Presupuesto rechazado.";
+            else    TempData["Error"]   = error;
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Duplicar(int id)
+        {
+            var nuevo = await _presupuestoService.DuplicarAsync(id);
+            TempData["Success"] = $"Se ha creado el presupuesto {nuevo.Numero} como copia. Ya puedes modificarlo.";
+            return RedirectToAction(nameof(Details), new { id = nuevo.Id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AgregarLinea(LineaPresupuestoFormViewModel vm)
         {
+            var presupuesto = await _presupuestoService.GetByIdAsync(vm.PresupuestoId);
+            if (presupuesto is null) return NotFound();
+
+            if (presupuesto.Estado != EstadoPresupuesto.Borrador)
+            {
+                TempData["Error"] = "Solo se pueden añadir líneas a un presupuesto en estado Borrador.";
+                return RedirectToAction(nameof(Details), new { id = vm.PresupuestoId });
+            }
+
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = "Revisa los datos de la línea.";
@@ -134,6 +190,15 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EliminarLinea(int lineaId, int presupuestoId)
         {
+            var presupuesto = await _presupuestoService.GetByIdAsync(presupuestoId);
+            if (presupuesto is null) return NotFound();
+
+            if (presupuesto.Estado != EstadoPresupuesto.Borrador)
+            {
+                TempData["Error"] = "Solo se pueden eliminar líneas de un presupuesto en estado Borrador.";
+                return RedirectToAction(nameof(Details), new { id = presupuestoId });
+            }
+
             await _presupuestoService.EliminarLineaAsync(lineaId);
             return RedirectToAction(nameof(Details), new { id = presupuestoId });
         }
