@@ -23,12 +23,6 @@
                 <span asp-validation-for="ClienteId" class="text-danger small"></span>
             </div>
             <div class="mb-3">
-                <label asp-for="Estado" class="form-label"></label>
-                <select asp-for="Estado" class="form-select"
-                        asp-items="Html.GetEnumSelectList<PymeCore.Models.EstadoPresupuesto>()">
-                </select>
-            </div>
-            <div class="mb-3">
                 <label asp-for="Observaciones" class="form-label"></label>
                 <textarea asp-for="Observaciones" class="form-control" rows="3"></textarea>
                 <span asp-validation-for="Observaciones" class="text-danger small"></span>

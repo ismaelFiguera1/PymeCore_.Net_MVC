@@ -67,6 +67,81 @@ namespace PymeCore.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task<Presupuesto> DuplicarAsync(int id)
+        {
+            var original = await GetByIdAsync(id);
+            if (original is null) throw new InvalidOperationException("Presupuesto no encontrado.");
+
+            var nuevo = new Presupuesto
+            {
+                Numero        = await GenerarNumeroAsync(),
+                ClienteId     = original.ClienteId,
+                Fecha         = DateTime.UtcNow,
+                Estado        = EstadoPresupuesto.Borrador,
+                Observaciones = original.Observaciones,
+                Total         = 0
+            };
+
+            _context.Presupuestos.Add(nuevo);
+            await _context.SaveChangesAsync();
+
+            foreach (var linea in original.Lineas)
+            {
+                _context.LineasPresupuesto.Add(new LineaPresupuesto
+                {
+                    PresupuestoId  = nuevo.Id,
+                    ProductoId     = linea.ProductoId,
+                    Descripcion    = linea.Descripcion,
+                    Cantidad       = linea.Cantidad,
+                    PrecioUnitario = linea.PrecioUnitario,
+                    Subtotal       = linea.Subtotal
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            await RecalcularTotalAsync(nuevo.Id);
+
+            return nuevo;
+        }
+
+        public async Task<(bool Ok, string? Error)> EnviarAsync(int id)
+        {
+            var presupuesto = await GetByIdAsync(id);
+            if (presupuesto is null) return (false, "Presupuesto no encontrado.");
+            if (presupuesto.Estado != EstadoPresupuesto.Borrador)
+                return (false, $"Solo se puede enviar un presupuesto en estado Borrador (estado actual: {presupuesto.Estado}).");
+            if (!presupuesto.Lineas.Any())
+                return (false, "No se puede enviar un presupuesto sin líneas. Añade al menos una.");
+
+            presupuesto.Estado = EstadoPresupuesto.Enviado;
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
+
+        public async Task<(bool Ok, string? Error)> AceptarAsync(int id)
+        {
+            var presupuesto = await GetByIdAsync(id);
+            if (presupuesto is null) return (false, "Presupuesto no encontrado.");
+            if (presupuesto.Estado != EstadoPresupuesto.Enviado)
+                return (false, $"Solo se puede aceptar un presupuesto en estado Enviado (estado actual: {presupuesto.Estado}).");
+
+            presupuesto.Estado = EstadoPresupuesto.Aceptado;
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
+
+        public async Task<(bool Ok, string? Error)> RechazarAsync(int id)
+        {
+            var presupuesto = await GetByIdAsync(id);
+            if (presupuesto is null) return (false, "Presupuesto no encontrado.");
+            if (presupuesto.Estado != EstadoPresupuesto.Enviado)
+                return (false, $"Solo se puede rechazar un presupuesto en estado Enviado (estado actual: {presupuesto.Estado}).");
+
+            presupuesto.Estado = EstadoPresupuesto.Rechazado;
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
+
         public async Task AgregarLineaAsync(LineaPresupuesto linea)
         {
             linea.Subtotal = linea.Cantidad * linea.PrecioUnitario;
