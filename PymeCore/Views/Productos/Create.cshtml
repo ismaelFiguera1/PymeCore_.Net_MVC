@@ -20,30 +20,36 @@
                 <input asp-for="Sku" class="form-control" />
                 <span asp-validation-for="Sku" class="text-danger small"></span>
             </div>
-            <div class="row">
-                <div class="col mb-3">
-                    <label asp-for="PrecioCoste" class="form-label"></label>
-                    <input asp-for="PrecioCoste" class="form-control" type="number" step="0.01" min="0.01" />
-                    <span asp-validation-for="PrecioCoste" class="text-danger small"></span>
+            <fieldset class="fieldset-group">
+                <legend>Precios</legend>
+                <div class="row">
+                    <div class="col mb-3">
+                        <label asp-for="PrecioCoste" class="form-label"></label>
+                        <input asp-for="PrecioCoste" class="form-control" type="number" step="0.01" min="0.01" />
+                        <span asp-validation-for="PrecioCoste" class="text-danger small"></span>
+                    </div>
+                    <div class="col mb-3">
+                        <label asp-for="PrecioVenta" class="form-label"></label>
+                        <input asp-for="PrecioVenta" class="form-control" type="number" step="0.01" min="0.01" />
+                        <span asp-validation-for="PrecioVenta" class="text-danger small"></span>
+                    </div>
                 </div>
-                <div class="col mb-3">
-                    <label asp-for="PrecioVenta" class="form-label"></label>
-                    <input asp-for="PrecioVenta" class="form-control" type="number" step="0.01" min="0.01" />
-                    <span asp-validation-for="PrecioVenta" class="text-danger small"></span>
+            </fieldset>
+            <fieldset class="fieldset-group">
+                <legend>Stock</legend>
+                <div class="row">
+                    <div class="col mb-3">
+                        <label asp-for="StockActual" class="form-label"></label>
+                        <input asp-for="StockActual" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="StockActual" class="text-danger small"></span>
+                    </div>
+                    <div class="col mb-3">
+                        <label asp-for="StockMinimo" class="form-label"></label>
+                        <input asp-for="StockMinimo" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="StockMinimo" class="text-danger small"></span>
+                    </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col mb-3">
-                    <label asp-for="StockActual" class="form-label"></label>
-                    <input asp-for="StockActual" class="form-control" type="number" min="0" />
-                    <span asp-validation-for="StockActual" class="text-danger small"></span>
-                </div>
-                <div class="col mb-3">
-                    <label asp-for="StockMinimo" class="form-label"></label>
-                    <input asp-for="StockMinimo" class="form-control" type="number" min="0" />
-                    <span asp-validation-for="StockMinimo" class="text-danger small"></span>
-                </div>
-            </div>
+            </fieldset>
             <div class="mb-3">
                 <label asp-for="ProveedorId" class="form-label"></label>
                 <select asp-for="ProveedorId" asp-items="ViewBag.Proveedores" class="form-select">
