@@ -16,8 +16,7 @@
             <span class="badge bg-secondary">Inactivo</span>
         }
     </header>
-    <section class="card-body">
-        <address>
+    <address class="card-body">
             <dl class="row mb-0">
                 <dt class="col-sm-4">NIF</dt>
                 <dd class="col-sm-8">@(Model.Nif ?? "—")</dd>
@@ -34,8 +33,7 @@
                 <dt class="col-sm-4">Ciudad</dt>
                 <dd class="col-sm-8">@(Model.Ciudad ?? "—")</dd>
             </dl>
-        </address>
-    </section>
+    </address>
     <footer class="card-footer">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary btn-sm">
             <i class="bi bi-pencil me-1"></i> Editar

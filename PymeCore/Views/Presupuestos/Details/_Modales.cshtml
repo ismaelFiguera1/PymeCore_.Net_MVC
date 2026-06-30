@@ -1,0 +1,56 @@
+@model PymeCore.Models.Presupuesto
+@using PymeCore.Models
+
+@{
+    bool puedeEditarLineas = Model.Estado == EstadoPresupuesto.Borrador;
+}
+
+@if (puedeEditarLineas)
+{
+    <div class="modal fade" id="modalEliminarLinea" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h5 class="modal-title">Eliminar línea</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </header>
+                <section class="modal-body">
+                    ¿Estás seguro de que quieres eliminar esta línea? Esta acción no se puede deshacer.
+                </section>
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="formEliminarLinea" asp-action="EliminarLinea" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" id="hiddenLineaId" name="lineaId" />
+                        <input type="hidden" id="hiddenPresupuestoId" name="presupuestoId" />
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </form>
+                </footer>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Estado == EstadoPresupuesto.Enviado)
+{
+    <div class="modal fade" id="modalRechazar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h5 class="modal-title">Rechazar presupuesto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </header>
+                <section class="modal-body">
+                    ¿Estás seguro de que quieres rechazar este presupuesto? Esta acción no se puede deshacer.
+                </section>
+                <footer class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form asp-action="Rechazar" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger">Rechazar</button>
+                    </form>
+                </footer>
+            </div>
+        </div>
+    </div>
+}
