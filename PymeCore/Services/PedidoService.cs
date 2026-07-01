@@ -7,10 +7,12 @@ namespace PymeCore.Services
     public class PedidoService
     {
         private readonly ApplicationDbContext _context;
+        private readonly StockService _stockService;
 
-        public PedidoService(ApplicationDbContext context)
+        public PedidoService(ApplicationDbContext context, StockService stockService)
         {
             _context = context;
+            _stockService = stockService;
         }
 
         public async Task<List<Pedido>> GetAllAsync()
@@ -97,11 +99,15 @@ namespace PymeCore.Services
             return (true, null, pedido);
         }
 
-        public async Task<(bool Ok, string? Error)> CambiarEstadoAsync(int pedidoId, EstadoPedido nuevoEstado)
+        public async Task<(bool Ok, string? Error, List<string>? Avisos)> CambiarEstadoAsync(int pedidoId, EstadoPedido nuevoEstado)
         {
-            var pedido = await _context.Pedidos.FindAsync(pedidoId);
+            var pedido = await _context.Pedidos
+                .Include(p => p.Lineas)
+                    .ThenInclude(l => l.Producto)
+                .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
             if (pedido is null)
-                return (false, "Pedido no encontrado.");
+                return (false, "Pedido no encontrado.", null);
 
             var transicionValida = (pedido.Estado, nuevoEstado) switch
             {
@@ -113,11 +119,48 @@ namespace PymeCore.Services
             };
 
             if (!transicionValida)
-                return (false, $"No se puede cambiar de {pedido.Estado} a {nuevoEstado}.");
+                return (false, $"No se puede cambiar de {pedido.Estado} a {nuevoEstado}.", null);
+
+            if (nuevoEstado == EstadoPedido.Completado)
+            {
+                var lineasSinStock = pedido.Lineas
+                    .Where(l => (l.Producto?.StockActual ?? 0) < l.Cantidad)
+                    .Select(l => $"{l.Producto?.Nombre}: stock insuficiente ({l.Producto?.StockActual} disponible, {l.Cantidad} necesario).")
+                    .ToList();
+
+                if (lineasSinStock.Count > 0)
+                    return (false, "No se puede completar el pedido: " + string.Join(" | ", lineasSinStock), null);
+
+                await using var tx = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    foreach (var linea in pedido.Lineas)
+                    {
+                        await _stockService.RegistrarMovimientoAsync(new MovimientoStock
+                        {
+                            ProductoId = linea.ProductoId,
+                            Tipo       = TipoMovimiento.Salida,
+                            Cantidad   = linea.Cantidad,
+                            Motivo     = $"Venta - {pedido.Numero}"
+                        });
+                    }
+
+                    pedido.Estado = EstadoPedido.Completado;
+                    await _context.SaveChangesAsync();
+                    await tx.CommitAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    return (false, "Error al registrar los movimientos de stock.", null);
+                }
+
+                return (true, null, null);
+            }
 
             pedido.Estado = nuevoEstado;
             await _context.SaveChangesAsync();
-            return (true, null);
+            return (true, null, null);
         }
     }
 }

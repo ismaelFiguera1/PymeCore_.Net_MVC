@@ -29,14 +29,17 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CambiarEstado(int id, PymeCore.Models.EstadoPedido nuevoEstado)
         {
-            var (ok, error) = await _pedidoService.CambiarEstadoAsync(id, nuevoEstado);
+            var (ok, error, avisos) = await _pedidoService.CambiarEstadoAsync(id, nuevoEstado);
 
             if (!ok)
                 TempData["Error"] = error;
             else if (nuevoEstado == PymeCore.Models.EstadoPedido.Cancelado)
-                TempData["Warning"] = $"Pedido cancelado.";
+                TempData["Warning"] = "Pedido cancelado.";
             else
                 TempData["Success"] = $"Estado actualizado a {nuevoEstado}.";
+
+            if (avisos is { Count: > 0 })
+                TempData["Warning"] = string.Join(" | ", avisos);
 
             return RedirectToAction("Details", new { id });
         }
