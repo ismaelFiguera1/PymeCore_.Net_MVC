@@ -23,6 +23,7 @@ builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<StockService>();
 builder.Services.AddScoped<PresupuestoService>();
 builder.Services.AddScoped<PedidoService>();
+builder.Services.AddScoped<FacturaService>();
 
 var app = builder.Build();
 

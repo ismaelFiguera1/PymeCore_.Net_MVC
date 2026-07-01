@@ -1,0 +1,61 @@
+using Microsoft.AspNetCore.Mvc;
+using PymeCore.Models;
+using PymeCore.Services;
+
+namespace PymeCore.Controllers
+{
+    public class FacturasController : Controller
+    {
+        private readonly FacturaService _facturaService;
+
+        public FacturasController(FacturaService facturaService)
+        {
+            _facturaService = facturaService;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var facturas = await _facturaService.GetAllAsync();
+            return View(facturas);
+        }
+
+        public async Task<IActionResult> Details(int id)
+        {
+            var factura = await _facturaService.GetByIdAsync(id);
+            if (factura is null) return NotFound();
+            return View(factura);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerarDesdePedido(int pedidoId)
+        {
+            var (ok, error, factura) = await _facturaService.GenerarDesdePedidoAsync(pedidoId);
+
+            if (!ok)
+            {
+                TempData["Error"] = error;
+                return RedirectToAction("Details", "Pedidos", new { id = pedidoId });
+            }
+
+            TempData["Success"] = $"Factura {factura!.Numero} generada correctamente.";
+            return RedirectToAction("Details", new { id = factura.Id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstado(int id, EstadoFactura nuevoEstado)
+        {
+            var (ok, error) = await _facturaService.CambiarEstadoAsync(id, nuevoEstado);
+
+            if (!ok)
+                TempData["Error"] = error;
+            else if (nuevoEstado == EstadoFactura.Anulada)
+                TempData["Warning"] = "Factura anulada.";
+            else
+                TempData["Success"] = $"Estado actualizado a {nuevoEstado}.";
+
+            return RedirectToAction("Details", new { id });
+        }
+    }
+}
