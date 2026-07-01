@@ -22,14 +22,14 @@ namespace PymeCore.Services
         }
 
         // Devuelve null si el movimiento es válido, o un mensaje de error si no lo es.
-        public async Task<string?> RegistrarMovimientoAsync(MovimientoStock movimiento)
+        public async Task<string?> RegistrarMovimientoAsync(MovimientoStock movimiento, bool permitirNegativo = false)
         {
             var producto = await _context.Productos.FindAsync(movimiento.ProductoId);
             if (producto is null) return "Producto no encontrado.";
 
             int delta = CalcularDelta(movimiento.Tipo, movimiento.Cantidad);
 
-            if (producto.StockActual + delta < 0)
+            if (!permitirNegativo && producto.StockActual + delta < 0)
                 return "El stock no puede quedar en negativo.";
 
             movimiento.Fecha = DateTime.UtcNow;
