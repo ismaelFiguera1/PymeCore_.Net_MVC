@@ -36,6 +36,8 @@ namespace PymeCore.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal Total { get; set; }
 
+        public int? FacturaId { get; set; }
+
         public ICollection<LineaPedido> Lineas { get; set; } = new List<LineaPedido>();
     }
 }

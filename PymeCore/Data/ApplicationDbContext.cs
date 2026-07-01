@@ -19,6 +19,7 @@ namespace PymeCore.Data
         public DbSet<LineaPresupuesto> LineasPresupuesto { get; set; }
         public DbSet<Pedido> Pedidos { get; set; }
         public DbSet<LineaPedido> LineasPedido { get; set; }
+        public DbSet<Factura> Facturas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -33,6 +34,16 @@ namespace PymeCore.Data
                 .WithMany()
                 .HasForeignKey(p => p.PresupuestoOrigenId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Factura>()
+                .HasOne(f => f.Pedido)
+                .WithOne()
+                .HasForeignKey<Factura>(f => f.PedidoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Factura>()
+                .HasIndex(f => f.PedidoId)
+                .IsUnique();
         }
     }
 }

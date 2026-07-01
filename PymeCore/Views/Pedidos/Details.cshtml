@@ -101,6 +101,22 @@
             </form>
         }
 
+        @if (Model.Estado == EstadoPedido.Completado && Model.FacturaId is null)
+        {
+            <form asp-controller="Facturas" asp-action="GenerarDesdePedido" method="post" class="d-inline">
+                <input type="hidden" name="pedidoId" value="@Model.Id" />
+                <button type="submit" class="btn btn-success btn-sm">
+                    <i class="bi bi-receipt me-1"></i> Generar Factura
+                </button>
+            </form>
+        }
+        else if (Model.FacturaId is not null)
+        {
+            <a asp-controller="Facturas" asp-action="Details" asp-route-id="@Model.FacturaId" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-receipt me-1"></i> Ver Factura
+            </a>
+        }
+
     </footer>
 </article>
 
