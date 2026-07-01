@@ -96,5 +96,28 @@ namespace PymeCore.Services
 
             return (true, null, pedido);
         }
+
+        public async Task<(bool Ok, string? Error)> CambiarEstadoAsync(int pedidoId, EstadoPedido nuevoEstado)
+        {
+            var pedido = await _context.Pedidos.FindAsync(pedidoId);
+            if (pedido is null)
+                return (false, "Pedido no encontrado.");
+
+            var transicionValida = (pedido.Estado, nuevoEstado) switch
+            {
+                (EstadoPedido.Pendiente,     EstadoPedido.EnPreparacion) => true,
+                (EstadoPedido.Pendiente,     EstadoPedido.Cancelado)     => true,
+                (EstadoPedido.EnPreparacion, EstadoPedido.Completado)    => true,
+                (EstadoPedido.EnPreparacion, EstadoPedido.Cancelado)     => true,
+                _                                                         => false
+            };
+
+            if (!transicionValida)
+                return (false, $"No se puede cambiar de {pedido.Estado} a {nuevoEstado}.");
+
+            pedido.Estado = nuevoEstado;
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
     }
 }
