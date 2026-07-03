@@ -13,6 +13,7 @@ namespace PymeCore.ViewModels.Proveedores
 
         [Required(ErrorMessage = "El CIF es obligatorio")]
         [MaxLength(9, ErrorMessage = "El CIF no puede superar los 9 caracteres")]
+        [RegularExpression(@"^\d{8}[A-Za-z]$", ErrorMessage = "El CIF debe tener el formato 8 números + 1 letra (ej. 12345678A).")]
         [Display(Name = "CIF")]
         public string Cif { get; set; } = string.Empty;
 
@@ -26,7 +27,8 @@ namespace PymeCore.ViewModels.Proveedores
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
 
-        [MaxLength(15, ErrorMessage = "El teléfono no puede superar los 15 caracteres")]
+        [MaxLength(9, ErrorMessage = "El teléfono no puede superar los 9 caracteres")]
+        [RegularExpression(@"^\d{9}$", ErrorMessage = "El teléfono debe tener 9 dígitos numéricos.")]
         [Display(Name = "Teléfono")]
         public string? Telefono { get; set; }
     }

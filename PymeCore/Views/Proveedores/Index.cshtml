@@ -4,6 +4,28 @@
     ViewData["Title"] = "Proveedores";
 }
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+        @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <article class="card">
     <header class="card-header d-flex justify-content-between align-items-center">
         <h2 class="card-title mb-0">Listado de proveedores</h2>
@@ -43,7 +65,7 @@
                 {
                     <tr class="@(!proveedor.Activo ? "table-secondary text-muted" : "")">
                         <td>@proveedor.Nombre</td>
-                        <td>@(proveedor.Cif ?? "—")</td>
+                        <td>@proveedor.Cif</td>
                         <td>@(proveedor.PersonaContacto ?? "—")</td>
                         <td>@proveedor.Email</td>
                         <td>
