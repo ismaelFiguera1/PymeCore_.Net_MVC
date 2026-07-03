@@ -14,9 +14,10 @@ namespace PymeCore.Controllers
             _clienteService = clienteService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? buscar)
         {
-            var clientes = await _clienteService.GetAllAsync();
+            ViewBag.Buscar = buscar;
+            var clientes = await _clienteService.GetAllAsync(buscar);
             return View(clientes);
         }
 
@@ -36,6 +37,15 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ClienteFormViewModel vm)
         {
+            vm.Nombre = vm.Nombre?.Trim() ?? string.Empty;
+            vm.Nif = vm.Nif?.Trim().ToUpperInvariant() ?? string.Empty;
+            vm.Email = vm.Email?.Trim() ?? string.Empty;
+            vm.Direccion = string.IsNullOrWhiteSpace(vm.Direccion) ? null : vm.Direccion.Trim();
+            vm.Ciudad = string.IsNullOrWhiteSpace(vm.Ciudad) ? null : vm.Ciudad.Trim();
+
+            if (await _clienteService.ExisteNifAsync(vm.Nif))
+                ModelState.AddModelError(nameof(vm.Nif), "Ya existe un cliente con este NIF.");
+
             if (!ModelState.IsValid) return View(vm);
 
             var cliente = new Cliente
@@ -49,7 +59,13 @@ namespace PymeCore.Controllers
                 Activo    = true
             };
 
-            await _clienteService.CreateAsync(cliente);
+            var (ok, error) = await _clienteService.CreateAsync(cliente);
+            if (!ok)
+            {
+                ModelState.AddModelError(nameof(vm.Nif), error!);
+                return View(vm);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -77,6 +93,16 @@ namespace PymeCore.Controllers
         public async Task<IActionResult> Edit(int id, ClienteFormViewModel vm)
         {
             if (id != vm.Id) return BadRequest();
+
+            vm.Nombre = vm.Nombre?.Trim() ?? string.Empty;
+            vm.Nif = vm.Nif?.Trim().ToUpperInvariant() ?? string.Empty;
+            vm.Email = vm.Email?.Trim() ?? string.Empty;
+            vm.Direccion = string.IsNullOrWhiteSpace(vm.Direccion) ? null : vm.Direccion.Trim();
+            vm.Ciudad = string.IsNullOrWhiteSpace(vm.Ciudad) ? null : vm.Ciudad.Trim();
+
+            if (await _clienteService.ExisteNifAsync(vm.Nif, id))
+                ModelState.AddModelError(nameof(vm.Nif), "Ya existe un cliente con este NIF.");
+
             if (!ModelState.IsValid) return View(vm);
 
             var cliente = await _clienteService.GetByIdAsync(id);
@@ -89,7 +115,13 @@ namespace PymeCore.Controllers
             cliente.Direccion = vm.Direccion;
             cliente.Ciudad    = vm.Ciudad;
 
-            await _clienteService.UpdateAsync(cliente);
+            var (ok, error) = await _clienteService.UpdateAsync(cliente);
+            if (!ok)
+            {
+                ModelState.AddModelError(nameof(vm.Nif), error!);
+                return View(vm);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -97,7 +129,17 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deactivate(int id)
         {
-            await _clienteService.DeactivateAsync(id);
+            var (ok, error) = await _clienteService.DeactivateAsync(id);
+            TempData[ok ? "Warning" : "Error"] = ok ? "Cliente desactivado." : error;
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
+        {
+            var (ok, error) = await _clienteService.ActivateAsync(id);
+            TempData[ok ? "Success" : "Error"] = ok ? "Cliente activado." : error;
             return RedirectToAction(nameof(Index));
         }
     }

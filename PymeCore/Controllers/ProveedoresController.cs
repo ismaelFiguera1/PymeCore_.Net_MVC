@@ -37,6 +37,14 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProveedorFormViewModel vm)
         {
+            vm.Nombre = vm.Nombre?.Trim() ?? string.Empty;
+            vm.Cif = vm.Cif?.Trim().ToUpperInvariant() ?? string.Empty;
+            vm.PersonaContacto = string.IsNullOrWhiteSpace(vm.PersonaContacto) ? null : vm.PersonaContacto.Trim();
+            vm.Email = vm.Email?.Trim() ?? string.Empty;
+
+            if (await _proveedorService.ExisteCifAsync(vm.Cif))
+                ModelState.AddModelError(nameof(vm.Cif), "Ya existe un proveedor con este CIF.");
+
             if (!ModelState.IsValid) return View(vm);
 
             var proveedor = new Proveedor
@@ -49,7 +57,14 @@ namespace PymeCore.Controllers
                 Activo          = true
             };
 
-            await _proveedorService.CreateAsync(proveedor);
+            var (ok, error) = await _proveedorService.CreateAsync(proveedor);
+            if (!ok)
+            {
+                ModelState.AddModelError(nameof(vm.Cif), error!);
+                return View(vm);
+            }
+
+            TempData["Success"] = "Proveedor creado.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -76,6 +91,15 @@ namespace PymeCore.Controllers
         public async Task<IActionResult> Edit(int id, ProveedorFormViewModel vm)
         {
             if (id != vm.Id) return BadRequest();
+
+            vm.Nombre = vm.Nombre?.Trim() ?? string.Empty;
+            vm.Cif = vm.Cif?.Trim().ToUpperInvariant() ?? string.Empty;
+            vm.PersonaContacto = string.IsNullOrWhiteSpace(vm.PersonaContacto) ? null : vm.PersonaContacto.Trim();
+            vm.Email = vm.Email?.Trim() ?? string.Empty;
+
+            if (await _proveedorService.ExisteCifAsync(vm.Cif, id))
+                ModelState.AddModelError(nameof(vm.Cif), "Ya existe un proveedor con este CIF.");
+
             if (!ModelState.IsValid) return View(vm);
 
             var proveedor = await _proveedorService.GetByIdAsync(id);
@@ -87,7 +111,14 @@ namespace PymeCore.Controllers
             proveedor.Email           = vm.Email;
             proveedor.Telefono        = vm.Telefono;
 
-            await _proveedorService.UpdateAsync(proveedor);
+            var (ok, error) = await _proveedorService.UpdateAsync(proveedor);
+            if (!ok)
+            {
+                ModelState.AddModelError(nameof(vm.Cif), error!);
+                return View(vm);
+            }
+
+            TempData["Success"] = "Proveedor actualizado.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -95,7 +126,8 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deactivate(int id)
         {
-            await _proveedorService.DeactivateAsync(id);
+            var (ok, error) = await _proveedorService.DeactivateAsync(id);
+            TempData[ok ? "Warning" : "Error"] = ok ? "Proveedor desactivado." : error;
             return RedirectToAction(nameof(Index));
         }
 
@@ -103,7 +135,8 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Activate(int id)
         {
-            await _proveedorService.ActivateAsync(id);
+            var (ok, error) = await _proveedorService.ActivateAsync(id);
+            TempData[ok ? "Success" : "Error"] = ok ? "Proveedor activado." : error;
             return RedirectToAction(nameof(Index));
         }
     }

@@ -13,6 +13,7 @@ namespace PymeCore.ViewModels.Clientes
 
         [Required(ErrorMessage = "El NIF es obligatorio")]
         [MaxLength(9, ErrorMessage = "El NIF no puede superar los 9 caracteres")]
+        [RegularExpression(@"^\d{8}[A-Za-z]$", ErrorMessage = "El NIF debe tener el formato 8 números + 1 letra (ej. 12345678A).")]
         [Display(Name = "NIF")]
         public string Nif { get; set; } = string.Empty;
 
@@ -24,6 +25,7 @@ namespace PymeCore.ViewModels.Clientes
 
         [Required(ErrorMessage = "El teléfono es obligatorio")]
         [MaxLength(9, ErrorMessage = "El teléfono no puede superar los 9 caracteres")]
+        [RegularExpression(@"^\d{9}$", ErrorMessage = "El teléfono debe tener 9 dígitos numéricos.")]
         [Display(Name = "Teléfono")]
         public string Telefono { get; set; } = string.Empty;
 

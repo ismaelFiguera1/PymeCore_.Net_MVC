@@ -47,11 +47,11 @@ if (app.Environment.IsDevelopment())
     );
 
     context.Proveedores.AddRange(
-        new Proveedor { Nombre = "Suministros Industriales SA", Cif = "A12345678", PersonaContacto = "Carlos Ruiz",   Email = "carlos@suministros.com",  Telefono = "911234567", Activo = true  },
-        new Proveedor { Nombre = "Materiales del Norte SL",     Cif = "B23456789", PersonaContacto = "Ana Martínez",  Email = "ana@mnorte.com",          Telefono = "922345678", Activo = true  },
-        new Proveedor { Nombre = "Tech Components SL",          Cif = "B34567890", PersonaContacto = "Luis García",   Email = "luis@techcomponents.com",  Telefono = "933456789", Activo = true  },
-        new Proveedor { Nombre = "Logística Express SA",        Cif = "A45678901", PersonaContacto = "María López",   Email = "maria@logexpress.com",     Telefono = "944567890", Activo = true  },
-        new Proveedor { Nombre = "Proveedor Inactivo SL",       Cif = "C56789012", PersonaContacto = null,            Email = "info@inactivo.com",        Telefono = null,        Activo = false }
+        new Proveedor { Nombre = "Suministros Industriales SA", Cif = "12345678A", PersonaContacto = "Carlos Ruiz",   Email = "carlos@suministros.com",  Telefono = "911234567", Activo = true  },
+        new Proveedor { Nombre = "Materiales del Norte SL",     Cif = "23456789B", PersonaContacto = "Ana Martínez",  Email = "ana@mnorte.com",          Telefono = "922345678", Activo = true  },
+        new Proveedor { Nombre = "Tech Components SL",          Cif = "34567890B", PersonaContacto = "Luis García",   Email = "luis@techcomponents.com",  Telefono = "933456789", Activo = true  },
+        new Proveedor { Nombre = "Logística Express SA",        Cif = "45678901A", PersonaContacto = "María López",   Email = "maria@logexpress.com",     Telefono = "944567890", Activo = true  },
+        new Proveedor { Nombre = "Proveedor Inactivo SL",       Cif = "56789012C", PersonaContacto = null,            Email = "info@inactivo.com",        Telefono = null,        Activo = false }
     );
     context.SaveChanges();
 

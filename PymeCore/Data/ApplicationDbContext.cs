@@ -29,6 +29,14 @@ namespace PymeCore.Data
                 .HasIndex(p => p.Sku)
                 .IsUnique();
 
+            builder.Entity<Proveedor>()
+                .HasIndex(p => p.Cif)
+                .IsUnique();
+
+            builder.Entity<Cliente>()
+                .HasIndex(c => c.Nif)
+                .IsUnique();
+
             builder.Entity<Pedido>()
                 .HasOne(p => p.PresupuestoOrigen)
                 .WithMany()
