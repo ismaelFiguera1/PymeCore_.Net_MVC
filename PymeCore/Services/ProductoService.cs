@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PymeCore.Data;
 using PymeCore.Models;
@@ -11,6 +13,59 @@ namespace PymeCore.Services
         public ProductoService(ApplicationDbContext context)
         {
             _context = context;
+        }
+
+        // Combina un prefijo de 3 letras (según el nombre) con un número correlativo, ej. "SIL-0004"
+        public async Task<string> GenerarSkuAsync(string nombre)
+        {
+            var prefijo = ObtenerPrefijo(nombre);
+            var siguienteNumero = await ObtenerSiguienteNumeroAsync();
+            return $"{prefijo}-{siguienteNumero:D4}";
+        }
+
+        private static string ObtenerPrefijo(string nombre)
+        {
+            // Normalize(FormD) separa cada letra acentuada en (letra base + marca diacrítica),
+            // para poder filtrar la marca a continuación y quedarse solo con la letra sin acento
+            var normalizado = nombre.Normalize(NormalizationForm.FormD);
+            var letras = normalizado
+                // descarta las marcas diacríticas (acentos) y cualquier carácter que no sea letra (espacios, números...)
+                .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark && char.IsLetter(c))
+                .Select(char.ToUpperInvariant)
+                // se queda solo con las 3 primeras letras válidas del nombre
+                .Take(3)
+                .ToArray();
+
+            // si el nombre no tiene ninguna letra usable, usa "PRD" por defecto;
+            // si tiene menos de 3 letras, rellena el resto con 'X' hasta completar 3 caracteres
+            return letras.Length == 0
+                ? "PRD"
+                : new string(letras).PadRight(3, 'X');
+        }
+
+        private async Task<int> ObtenerSiguienteNumeroAsync()
+        {
+            // 1) Saca de la BD solo la columna Sku de todos los productos (no hace falta el resto de campos)
+            var skus = await _context.Productos.Select(p => p.Sku).ToListAsync();
+
+            // 2) Recorre cada SKU existente para encontrar el número más alto ya usado
+            var maxNumero = 0;
+            foreach (var sku in skus)
+            {
+                // Un SKU válido tiene forma "PREFIJO-0004", así que separarlo por '-' debe dar 2 trozos:
+                // partes[0] = "PREFIJO", partes[1] = "0004"
+                var partes = sku.Split('-');
+
+                // Solo se tiene en cuenta el SKU si de verdad tiene esos 2 trozos Y el segundo trozo
+                // es convertible a número (int.TryParse); si no cumple esto, se ignora ese SKU
+                if (partes.Length == 2 && int.TryParse(partes[1], out var numero))
+                    // Se va guardando el número más alto visto hasta ahora entre todos los SKU
+                    maxNumero = Math.Max(maxNumero, numero);
+            }
+
+            // 3) El siguiente número a usar es ese máximo + 1 (cuenta entre TODOS los productos,
+            // no reinicia por cada prefijo distinto)
+            return maxNumero + 1;
         }
 
         public async Task<List<Producto>> GetAllAsync(string? buscar = null)
@@ -33,12 +88,6 @@ namespace PymeCore.Services
             return await _context.Productos
                 .Include(p => p.Proveedor)
                 .FirstOrDefaultAsync(p => p.Id == id);
-        }
-
-        public async Task<bool> ExisteSkuAsync(string sku, int excludeId = 0)
-        {
-            return await _context.Productos
-                .AnyAsync(p => p.Sku == sku && p.Id != excludeId);
         }
 
         public async Task CreateAsync(Producto producto)

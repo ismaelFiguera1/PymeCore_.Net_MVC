@@ -43,9 +43,6 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProductoFormViewModel vm)
         {
-            if (await _productoService.ExisteSkuAsync(vm.Sku))
-                ModelState.AddModelError(nameof(vm.Sku), "Ya existe un producto con este SKU.");
-
             if (!ModelState.IsValid)
             {
                 await CargarProveedoresAsync();
@@ -55,12 +52,12 @@ namespace PymeCore.Controllers
             var producto = new Producto
             {
                 Nombre      = vm.Nombre,
-                Sku         = vm.Sku,
+                Sku         = await _productoService.GenerarSkuAsync(vm.Nombre),
                 PrecioCoste = vm.PrecioCoste,
                 PrecioVenta = vm.PrecioVenta,
                 StockActual = 0,
                 StockMinimo = vm.StockMinimo,
-                ProveedorId = vm.ProveedorId
+                ProveedorId = vm.ProveedorId!.Value
             };
 
             await _productoService.CreateAsync(producto);
@@ -106,9 +103,6 @@ namespace PymeCore.Controllers
         {
             if (id != vm.Id) return BadRequest();
 
-            if (await _productoService.ExisteSkuAsync(vm.Sku, excludeId: vm.Id))
-                ModelState.AddModelError(nameof(vm.Sku), "Ya existe un producto con este SKU.");
-
             if (!ModelState.IsValid)
             {
                 await CargarProveedoresAsync();
@@ -119,11 +113,10 @@ namespace PymeCore.Controllers
             if (producto is null) return NotFound();
 
             producto.Nombre      = vm.Nombre;
-            producto.Sku         = vm.Sku;
             producto.PrecioCoste = vm.PrecioCoste;
             producto.PrecioVenta = vm.PrecioVenta;
             producto.StockMinimo = vm.StockMinimo;
-            producto.ProveedorId = vm.ProveedorId;
+            producto.ProveedorId = vm.ProveedorId!.Value;
 
             await _productoService.UpdateAsync(producto);
             return RedirectToAction(nameof(Index));
