@@ -107,6 +107,7 @@ namespace PymeCore.Services
             if (pedido is null)
                 return (false, "Pedido no encontrado.");
 
+
             var transicionValida = (pedido.Estado, nuevoEstado) switch
             {
                 (EstadoPedido.Pendiente,     EstadoPedido.EnPreparacion) => true,
@@ -119,12 +120,17 @@ namespace PymeCore.Services
             if (!transicionValida)
                 return (false, $"No se puede cambiar de {pedido.Estado} a {nuevoEstado}.");
 
+
             if (nuevoEstado == EstadoPedido.Completado)
             {
+
                 await _context.Entry(pedido).Collection(p => p.Lineas).Query()
                     .Include(l => l.Producto)
                     .LoadAsync();
 
+                // Validación bloqueante: se revisan TODAS las líneas antes de mover una
+                // sola unidad de stock. Si falta stock en cualquiera, se corta acá y no
+                // se llega a abrir la transacción.
                 var lineasSinStock = pedido.Lineas
                     .Where(l => (l.Producto?.StockActual ?? 0) < l.Cantidad)
                     .Select(l => $"{l.Producto?.Nombre}: stock insuficiente ({l.Producto?.StockActual} disponible, {l.Cantidad} necesario).")
@@ -133,11 +139,18 @@ namespace PymeCore.Services
                 if (lineasSinStock.Count > 0)
                     return (false, "No se puede completar el pedido: " + string.Join(" | ", lineasSinStock));
 
+                // Transacción: si el descuento de stock de una línea falla a mitad de
+                // camino, hay que deshacer TODO (las líneas ya descontadas + el cambio
+                // de estado), no dejar el pedido a medio completar.
                 await using var tx = await _context.Database.BeginTransactionAsync();
                 try
                 {
                     foreach (var linea in pedido.Lineas)
                     {
+                        // Por cada línea del pedido se registra una Salida de stock.
+                        // RegistrarMovimientoAsync devuelve string? como error en vez de
+                        // lanzar excepción, por eso se convierte a excepción acá para
+                        // que dispare el catch/rollback de la transacción.
                         var errorStock = await _stockService.RegistrarMovimientoAsync(new MovimientoStock
                         {
                             ProductoId = linea.ProductoId,
@@ -156,6 +169,8 @@ namespace PymeCore.Services
                 }
                 catch
                 {
+                    // Rollback deshace los movimientos de stock ya guardados en este
+                    // foreach; el pedido queda igual que antes de intentar completarlo.
                     await tx.RollbackAsync();
                     return (false, "Error al registrar los movimientos de stock.");
                 }
@@ -163,6 +178,8 @@ namespace PymeCore.Services
                 return (true, null);
             }
 
+            // Camino simple: transiciones que no son "Completado" (ej. Cancelado)
+            // no tocan stock, solo actualizan el Estado.
             pedido.Estado = nuevoEstado;
             await _context.SaveChangesAsync();
             return (true, null);

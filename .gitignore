@@ -45,6 +45,13 @@ PublishProfiles/
 ## Archivos locales del proyecto
 *.pdf
 AGENTS.md
+PymeCore/chat.txt
+
+## Claude / graphify
+.claude/
+CLAUDE.md
+.graphifyignore
+graphify-out/
 
 ## OS
 .DS_Store
