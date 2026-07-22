@@ -25,8 +25,9 @@ namespace PymeCore.Models
 
         public int StockMinimo { get; set; }
 
-        public int? ProveedorId { get; set; }
-        public Proveedor? Proveedor { get; set; }
+        [Required]
+        public int ProveedorId { get; set; }
+        public Proveedor Proveedor { get; set; } = null!;
 
         public bool BajoStock => StockActual < StockMinimo;
     }

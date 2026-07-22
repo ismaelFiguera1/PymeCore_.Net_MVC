@@ -29,6 +29,12 @@ namespace PymeCore.Data
                 .HasIndex(p => p.Sku)
                 .IsUnique();
 
+            builder.Entity<Producto>()
+                .HasOne(p => p.Proveedor)
+                .WithMany()
+                .HasForeignKey(p => p.ProveedorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<Proveedor>()
                 .HasIndex(p => p.Cif)
                 .IsUnique();

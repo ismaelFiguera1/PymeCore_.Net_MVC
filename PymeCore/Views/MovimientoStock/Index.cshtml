@@ -56,9 +56,25 @@
                             </td>
                             <td>
                                 @{
-                                    var signo = m.Tipo == PymeCore.Models.TipoMovimiento.Salida ? "-" : "+";
+                                    // m.Cantidad es el número tal cual se guardó en la BD, SIEMPRE positivo
+                                    // para Entrada/Salida/Devolucion (el formulario lo obliga), y puede ser
+                                    // positivo o negativo solo para Ajuste (ej. -59 para restar 59 unidades).
+                                    //
+                                    // "valor" aquí representa el efecto REAL sobre el stock, no lo que se guardó:
+                                    // - Si es Salida: aunque en BD esté guardado como positivo (ej. 16),
+                                    //   el efecto siempre es restar, así que se le pone el signo "-" a mano (-m.Cantidad).
+                                    // - Para el resto de tipos (Entrada, Devolucion, Ajuste): se deja tal cual
+                                    //   está guardado, porque su signo ya es el correcto (Ajuste puede venir
+                                    //   ya en negativo, y eso es justo lo que se quiere mostrar).
+                                    var valor = m.Tipo == PymeCore.Models.TipoMovimiento.Salida ? -m.Cantidad : m.Cantidad;
+
+                                    // A partir de "valor" (ya con el signo real) se decide qué símbolo mostrar:
+                                    // "+" si es 0 o positivo, "-" si es negativo
+                                    var signo = valor >= 0 ? "+" : "-";
                                 }
-                                @signo@Math.Abs(m.Cantidad)
+                                @* Se muestra el símbolo calculado + el número en positivo (Math.Abs quita
+                                   el signo del número para no duplicarlo, ya que el signo ya se puso arriba) *@
+                                @signo@Math.Abs(valor)
                             </td>
                             <td>@(m.Motivo ?? "—")</td>
                         </tr>

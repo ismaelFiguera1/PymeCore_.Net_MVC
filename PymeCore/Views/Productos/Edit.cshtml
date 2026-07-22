@@ -18,8 +18,7 @@
             </div>
             <div class="mb-3">
                 <label asp-for="Sku" class="form-label"></label>
-                <input asp-for="Sku" class="form-control" />
-                <span asp-validation-for="Sku" class="text-danger small"></span>
+                <input asp-for="Sku" class="form-control" readonly />
             </div>
             <fieldset class="fieldset-group">
                 <legend>Precios</legend>
@@ -57,8 +56,9 @@
             <div class="mb-3">
                 <label asp-for="ProveedorId" class="form-label"></label>
                 <select asp-for="ProveedorId" asp-items="ViewBag.Proveedores" class="form-select">
-                    <option value="">— Sin proveedor —</option>
+                    <option value="">— Selecciona un proveedor —</option>
                 </select>
+                <span asp-validation-for="ProveedorId" class="text-danger small"></span>
             </div>
         </section>
         <footer class="card-footer">

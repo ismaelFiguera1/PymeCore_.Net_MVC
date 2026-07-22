@@ -11,8 +11,6 @@ namespace PymeCore.ViewModels.Productos
         [Display(Name = "Nombre")]
         public string Nombre { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "La referencia/SKU es obligatoria")]
-        [MaxLength(50, ErrorMessage = "El SKU no puede superar los 50 caracteres")]
         [Display(Name = "Referencia / SKU")]
         public string Sku { get; set; } = string.Empty;
 
@@ -36,6 +34,7 @@ namespace PymeCore.ViewModels.Productos
         [Range(0, int.MaxValue, ErrorMessage = "El stock mínimo no puede ser negativo")]
         public int StockMinimo { get; set; }
 
+        [Required(ErrorMessage = "Debes seleccionar un proveedor")]
         [Display(Name = "Proveedor")]
         public int? ProveedorId { get; set; }
 
