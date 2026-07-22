@@ -39,19 +39,30 @@ namespace PymeCore.Services
 
         public async Task<string> GenerarNumeroAsync()
         {
+
             var año = DateTime.UtcNow.Year;
             var prefix = $"PRES-{año}-";
 
+            // 2) Trae de la BD solo el campo Numero, y solo de los presupuestos de ESTE año
+            // (StartsWith(prefix) se traduce a un LIKE 'PRES-2026-%' en SQL, así que filtra en la propia BD,
+            // no trae todos los presupuestos de todos los años para descartarlos después).
             var numeros = await _context.Presupuestos
                 .Where(p => p.Numero.StartsWith(prefix))
                 .Select(p => p.Numero)
                 .ToListAsync();
 
+            // 3) De cada número ya guardado (ej. "PRES-2026-004"), se queda con lo que hay después del prefijo
+            // (n[prefix.Length..] es "004") y lo intenta convertir a int; si algún Numero no tuviera ese formato
+            // (dato corrupto o antiguo), int.TryParse fallaría y se usa 0 en su lugar en vez de reventar.
+            // DefaultIfEmpty(0) cubre el caso de que sea el primer presupuesto del año (la lista numeros está vacía,
+            // y Max() sobre una secuencia vacía lanzaría excepción sin esto).
+            // Al máximo encontrado se le suma 1: ese es el siguiente correlativo a usar.
             var siguiente = numeros
                 .Select(n => int.TryParse(n[prefix.Length..], out var num) ? num : 0)
                 .DefaultIfEmpty(0)
                 .Max() + 1;
 
+            // 4) Se compone el número final con el correlativo en 3 dígitos (D3 → "004"), ej. "PRES-2026-004"
             return $"{prefix}{siguiente:D3}";
         }
 
