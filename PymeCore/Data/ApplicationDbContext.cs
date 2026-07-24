@@ -20,6 +20,7 @@ namespace PymeCore.Data
         public DbSet<Pedido> Pedidos { get; set; }
         public DbSet<LineaPedido> LineasPedido { get; set; }
         public DbSet<Factura> Facturas { get; set; }
+        public DbSet<FacturaSnapshot> FacturaSnapshots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -43,6 +44,44 @@ namespace PymeCore.Data
                 .HasIndex(c => c.Nif)
                 .IsUnique();
 
+            // El correlativo (PRES-2026-001, etc.) se calcula en el Service leyendo el máximo actual
+            // y sumando 1; sin este índice, dos peticiones simultáneas podrían calcular el mismo
+            // número y guardarlo duplicado. El índice único obliga a que la BD rechace el segundo
+            // intento, y el Service reacciona regenerando el número y reintentando.
+            builder.Entity<Presupuesto>()
+                .HasIndex(p => p.Numero)
+                .IsUnique();
+
+            builder.Entity<Pedido>()
+                .HasIndex(p => p.Numero)
+                .IsUnique();
+
+            builder.Entity<Factura>()
+                .HasIndex(f => f.Numero)
+                .IsUnique();
+
+            // Sin esto, EF Core aplica Cascade por defecto (ClienteId es un int no-nulo, así que
+            // la relación cuenta como "obligatoria"): borrar un Cliente borraría en cascada sus
+            // facturas, pedidos y presupuestos. Con Restrict, la BD rechaza el borrado del Cliente
+            // mientras tenga registros asociados.
+            builder.Entity<Factura>()
+                .HasOne(f => f.Cliente)
+                .WithMany()
+                .HasForeignKey(f => f.ClienteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Pedido>()
+                .HasOne(p => p.Cliente)
+                .WithMany()
+                .HasForeignKey(p => p.ClienteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Presupuesto>()
+                .HasOne(p => p.Cliente)
+                .WithMany()
+                .HasForeignKey(p => p.ClienteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<Pedido>()
                 .HasOne(p => p.PresupuestoOrigen)
                 .WithMany()
@@ -58,6 +97,20 @@ namespace PymeCore.Data
             builder.Entity<Factura>()
                 .HasIndex(f => f.PedidoId)
                 .IsUnique();
+
+            builder.Entity<FacturaSnapshot>()
+                .HasOne(s => s.Factura)
+                .WithOne()
+                .HasForeignKey<FacturaSnapshot>(s => s.FacturaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<FacturaSnapshot>()
+                .HasIndex(s => s.FacturaId)
+                .IsUnique();
+
+            builder.Entity<FacturaSnapshot>()
+                .Property(s => s.DatosJson)
+                .HasColumnType("jsonb");
         }
     }
 }

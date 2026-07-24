@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PymeCore.Data;
 using PymeCore.Models;
 
@@ -7,10 +8,12 @@ namespace PymeCore.Services
     public class FacturaService
     {
         private readonly ApplicationDbContext _context;
+        private readonly FacturaSnapshotService _snapshotService;
 
-        public FacturaService(ApplicationDbContext context)
+        public FacturaService(ApplicationDbContext context, FacturaSnapshotService snapshotService)
         {
             _context = context;
+            _snapshotService = snapshotService;
         }
 
         public async Task<List<Factura>> GetAllAsync()
@@ -49,7 +52,11 @@ namespace PymeCore.Services
 
         public async Task<(bool Ok, string? Error, Factura? Factura)> GenerarDesdePedidoAsync(int pedidoId)
         {
-            var pedido = await _context.Pedidos.FirstOrDefaultAsync(p => p.Id == pedidoId);
+            var pedido = await _context.Pedidos
+                .Include(p => p.Cliente)
+                .Include(p => p.Lineas)
+                    .ThenInclude(l => l.Producto)
+                .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
             if (pedido is null)
                 return (false, "Pedido no encontrado.", null);
@@ -64,27 +71,51 @@ namespace PymeCore.Services
             var baseImponible = pedido.Total;
             var totalIva = Math.Round(baseImponible * porcentajeIva / 100m, 2);
 
-            var factura = new Factura
+            // Bucle de reintento: si otra petición se adelantó con el mismo número de factura
+            // (choque detectado por el índice único IX_Facturas_Numero), se descarta la transacción,
+            // se regenera el número y se vuelve a intentar, en vez de reventar con un error de BD.
+            const int maxIntentos = 3;
+
+            for (var intento = 1; ; intento++)
             {
-                Numero        = await GenerarNumeroAsync(),
-                ClienteId     = pedido.ClienteId,
-                PedidoId      = pedido.Id,
-                FechaEmision  = DateTime.UtcNow,
-                Estado        = EstadoFactura.Pendiente,
-                BaseImponible = baseImponible,
-                PorcentajeIVA = porcentajeIva,
-                TotalIVA      = totalIva,
-                Total         = baseImponible + totalIva
-            };
+                var factura = new Factura
+                {
+                    Numero        = await GenerarNumeroAsync(),
+                    ClienteId     = pedido.ClienteId,
+                    PedidoId      = pedido.Id,
+                    FechaEmision  = DateTime.UtcNow,
+                    Estado        = EstadoFactura.Pendiente,
+                    BaseImponible = baseImponible,
+                    PorcentajeIVA = porcentajeIva,
+                    TotalIVA      = totalIva,
+                    Total         = baseImponible + totalIva
+                };
 
-            _context.Facturas.Add(factura);
-            await _context.SaveChangesAsync();
+                await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            pedido.FacturaId = factura.Id;
-            await _context.SaveChangesAsync();
+                _context.Facturas.Add(factura);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (EsNumeroDuplicado(ex) && intento < maxIntentos)
+                {
+                    _context.Entry(factura).State = EntityState.Detached;
+                    continue;
+                }
 
-            return (true, null, factura);
+                pedido.FacturaId = factura.Id;
+                _snapshotService.Crear(factura, pedido);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return (true, null, factura);
+            }
         }
+
+        private static bool EsNumeroDuplicado(DbUpdateException ex) =>
+            ex.InnerException is PostgresException { SqlState: "23505", ConstraintName: "IX_Facturas_Numero" };
 
         public async Task<(bool Ok, string? Error)> CambiarEstadoAsync(int facturaId, EstadoFactura nuevoEstado)
         {

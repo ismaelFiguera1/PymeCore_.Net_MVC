@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using PymeCore.Data;
 using PymeCore.Services;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,11 @@ builder.Services.AddScoped<StockService>();
 builder.Services.AddScoped<PresupuestoService>();
 builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<FacturaService>();
+builder.Services.AddScoped<FacturaSnapshotService>();
+builder.Services.AddScoped<FacturaPdfService>();
+builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection("EmpresaOptions"));
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 

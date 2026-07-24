@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PymeCore.Data;
 using PymeCore.Models;
 
@@ -51,6 +52,33 @@ namespace PymeCore.Services
             return $"{prefix}{siguiente:D3}";
         }
 
+        // Genera el número y lo guarda; si otra petición se adelantó con el mismo número
+        // (choque detectado por el índice único IX_Pedidos_Numero), regenera y reintenta
+        // en vez de dejar reventar la petición con un error de base de datos.
+        private async Task GuardarConNumeroUnicoAsync(Pedido pedido)
+        {
+            const int maxIntentos = 3;
+
+            for (var intento = 1; ; intento++)
+            {
+                pedido.Numero = await GenerarNumeroAsync();
+                _context.Pedidos.Add(pedido);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return;
+                }
+                catch (DbUpdateException ex) when (EsNumeroDuplicado(ex) && intento < maxIntentos)
+                {
+                    _context.Entry(pedido).State = EntityState.Detached;
+                }
+            }
+        }
+
+        private static bool EsNumeroDuplicado(DbUpdateException ex) =>
+            ex.InnerException is PostgresException { SqlState: "23505", ConstraintName: "IX_Pedidos_Numero" };
+
         public async Task<(bool Ok, string? Error, Pedido? Pedido)> CrearDesdePresupuestoAsync(int presupuestoId)
         {
             var presupuesto = await _context.Presupuestos
@@ -68,7 +96,6 @@ namespace PymeCore.Services
 
             var pedido = new Pedido
             {
-                Numero              = await GenerarNumeroAsync(),
                 ClienteId           = presupuesto.ClienteId,
                 PresupuestoOrigenId = presupuesto.Id,
                 Fecha               = DateTime.UtcNow,
@@ -77,8 +104,7 @@ namespace PymeCore.Services
                 Total               = presupuesto.Total
             };
 
-            _context.Pedidos.Add(pedido);
-            await _context.SaveChangesAsync();
+            await GuardarConNumeroUnicoAsync(pedido);
 
             foreach (var linea in presupuesto.Lineas)
             {

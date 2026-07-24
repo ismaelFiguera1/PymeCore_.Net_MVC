@@ -7,10 +7,17 @@ namespace PymeCore.Controllers
     public class FacturasController : Controller
     {
         private readonly FacturaService _facturaService;
+        private readonly FacturaSnapshotService _snapshotService;
+        private readonly FacturaPdfService _pdfService;
 
-        public FacturasController(FacturaService facturaService)
+        public FacturasController(
+            FacturaService facturaService,
+            FacturaSnapshotService snapshotService,
+            FacturaPdfService pdfService)
         {
             _facturaService = facturaService;
+            _snapshotService = snapshotService;
+            _pdfService = pdfService;
         }
 
         public async Task<IActionResult> Index()
@@ -24,6 +31,23 @@ namespace PymeCore.Controllers
             var factura = await _facturaService.GetByIdAsync(id);
             if (factura is null) return NotFound();
             return View(factura);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DescargarPdf(int id)
+        {
+            var snapshot = await _snapshotService.GetDtoByFacturaIdAsync(id);
+
+            if (snapshot is null)
+                return NotFound();
+
+            var pdf = _pdfService.Generar(snapshot);
+
+            return File(
+                pdf,
+                "application/pdf",
+                $"Factura-{snapshot.NumeroFactura}.pdf"
+            );
         }
 
         [HttpPost]

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PymeCore.Data;
 using PymeCore.Models;
 
@@ -68,9 +69,35 @@ namespace PymeCore.Services
 
         public async Task CreateAsync(Presupuesto presupuesto)
         {
-            _context.Presupuestos.Add(presupuesto);
-            await _context.SaveChangesAsync();
+            await GuardarConNumeroUnicoAsync(presupuesto);
         }
+
+        // Genera el número y lo guarda; si otra petición se adelantó con el mismo número
+        // (choque detectado por el índice único IX_Presupuestos_Numero), regenera y reintenta
+        // en vez de dejar reventar la petición con un error de base de datos.
+        private async Task GuardarConNumeroUnicoAsync(Presupuesto presupuesto)
+        {
+            const int maxIntentos = 3;
+
+            for (var intento = 1; ; intento++)
+            {
+                presupuesto.Numero = await GenerarNumeroAsync();
+                _context.Presupuestos.Add(presupuesto);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return;
+                }
+                catch (DbUpdateException ex) when (EsNumeroDuplicado(ex) && intento < maxIntentos)
+                {
+                    _context.Entry(presupuesto).State = EntityState.Detached;
+                }
+            }
+        }
+
+        private static bool EsNumeroDuplicado(DbUpdateException ex) =>
+            ex.InnerException is PostgresException { SqlState: "23505", ConstraintName: "IX_Presupuestos_Numero" };
 
         public async Task UpdateAsync(Presupuesto presupuesto)
         {
@@ -85,7 +112,6 @@ namespace PymeCore.Services
 
             var nuevo = new Presupuesto
             {
-                Numero        = await GenerarNumeroAsync(),
                 ClienteId     = original.ClienteId,
                 Fecha         = DateTime.UtcNow,
                 Estado        = EstadoPresupuesto.Borrador,
@@ -93,8 +119,7 @@ namespace PymeCore.Services
                 Total         = 0
             };
 
-            _context.Presupuestos.Add(nuevo);
-            await _context.SaveChangesAsync();
+            await GuardarConNumeroUnicoAsync(nuevo);
 
             foreach (var linea in original.Lineas)
             {
