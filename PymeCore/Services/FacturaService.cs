@@ -80,15 +80,15 @@ namespace PymeCore.Services
             {
                 var factura = new Factura
                 {
-                    Numero        = await GenerarNumeroAsync(),
-                    ClienteId     = pedido.ClienteId,
-                    PedidoId      = pedido.Id,
-                    FechaEmision  = DateTime.UtcNow,
-                    Estado        = EstadoFactura.Pendiente,
+                    Numero = await GenerarNumeroAsync(),
+                    ClienteId = pedido.ClienteId,
+                    PedidoId = pedido.Id,
+                    FechaEmision = DateTime.UtcNow,
+                    Estado = EstadoFactura.Pendiente,
                     BaseImponible = baseImponible,
                     PorcentajeIVA = porcentajeIva,
-                    TotalIVA      = totalIva,
-                    Total         = baseImponible + totalIva
+                    TotalIVA = totalIva,
+                    Total = baseImponible + totalIva
                 };
 
                 await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -126,9 +126,9 @@ namespace PymeCore.Services
 
             var transicionValida = (factura.Estado, nuevoEstado) switch
             {
-                (EstadoFactura.Pendiente, EstadoFactura.Pagada)  => true,
+                (EstadoFactura.Pendiente, EstadoFactura.Pagada) => true,
                 (EstadoFactura.Pendiente, EstadoFactura.Anulada) => true,
-                _                                                  => false
+                _ => false
             };
 
             if (!transicionValida)

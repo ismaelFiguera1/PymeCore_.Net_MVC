@@ -57,8 +57,8 @@ app.UseStaticFiles();
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
     DefaultRequestCulture = new RequestCulture(CultureInfo.InvariantCulture),
-    SupportedCultures     = new[] { CultureInfo.InvariantCulture },
-    SupportedUICultures   = new[] { CultureInfo.InvariantCulture }
+    SupportedCultures = new[] { CultureInfo.InvariantCulture },
+    SupportedUICultures = new[] { CultureInfo.InvariantCulture }
 });
 
 app.UseRouting();

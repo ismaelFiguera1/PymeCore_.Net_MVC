@@ -34,9 +34,9 @@ namespace PymeCore.Controllers
 
             var vm = new MovimientoStockFormViewModel
             {
-                ProductoId      = producto.Id,
-                NombreProducto  = producto.Nombre,
-                StockActual     = producto.StockActual
+                ProductoId = producto.Id,
+                NombreProducto = producto.Nombre,
+                StockActual = producto.StockActual
             };
 
             return View(vm);
@@ -53,16 +53,16 @@ namespace PymeCore.Controllers
             {
                 var producto = await _productoService.GetByIdAsync(vm.ProductoId);
                 vm.NombreProducto = producto?.Nombre ?? string.Empty;
-                vm.StockActual    = producto?.StockActual ?? 0;
+                vm.StockActual = producto?.StockActual ?? 0;
                 return View(vm);
             }
 
             var movimiento = new MovimientoStock
             {
                 ProductoId = vm.ProductoId,
-                Tipo       = vm.Tipo,
-                Cantidad   = vm.Cantidad,
-                Motivo     = vm.Motivo
+                Tipo = vm.Tipo,
+                Cantidad = vm.Cantidad,
+                Motivo = vm.Motivo
             };
 
             var error = await _stockService.RegistrarMovimientoAsync(movimiento);
@@ -71,7 +71,7 @@ namespace PymeCore.Controllers
                 ModelState.AddModelError(nameof(vm.Cantidad), error);
                 var producto = await _productoService.GetByIdAsync(vm.ProductoId);
                 vm.NombreProducto = producto?.Nombre ?? string.Empty;
-                vm.StockActual    = producto?.StockActual ?? 0;
+                vm.StockActual = producto?.StockActual ?? 0;
                 return View(vm);
             }
 

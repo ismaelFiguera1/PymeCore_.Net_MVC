@@ -52,33 +52,16 @@ namespace PymeCore.Services
             return $"{prefix}{siguiente:D3}";
         }
 
-        // Genera el número y lo guarda; si otra petición se adelantó con el mismo número
-        // (choque detectado por el índice único IX_Pedidos_Numero), regenera y reintenta
-        // en vez de dejar reventar la petición con un error de base de datos.
-        private async Task GuardarConNumeroUnicoAsync(Pedido pedido)
-        {
-            const int maxIntentos = 3;
-
-            for (var intento = 1; ; intento++)
-            {
-                pedido.Numero = await GenerarNumeroAsync();
-                _context.Pedidos.Add(pedido);
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                    return;
-                }
-                catch (DbUpdateException ex) when (EsNumeroDuplicado(ex) && intento < maxIntentos)
-                {
-                    _context.Entry(pedido).State = EntityState.Detached;
-                }
-            }
-        }
-
         private static bool EsNumeroDuplicado(DbUpdateException ex) =>
             ex.InnerException is PostgresException { SqlState: "23505", ConstraintName: "IX_Pedidos_Numero" };
 
+        // Todo el proceso (pedido + líneas + enlace con el presupuesto) ocurre dentro de
+        // una única transacción: si falla cualquier paso, no debe quedar un pedido sin
+        // líneas ni un presupuesto sin marcar como convertido.
+        // Si otra petición se adelantó con el mismo número (choque contra el índice único
+        // IX_Pedidos_Numero), se hace rollback de la transacción entera y se reintenta la
+        // operación completa con un número nuevo, en vez de solo reintentar el guardado
+        // del pedido suelto.
         public async Task<(bool Ok, string? Error, Pedido? Pedido)> CrearDesdePresupuestoAsync(int presupuestoId)
         {
             var presupuesto = await _context.Presupuestos
@@ -94,35 +77,54 @@ namespace PymeCore.Services
             if (presupuesto.PedidoId is not null)
                 return (false, "Este presupuesto ya fue convertido en pedido.", null);
 
-            var pedido = new Pedido
-            {
-                ClienteId           = presupuesto.ClienteId,
-                PresupuestoOrigenId = presupuesto.Id,
-                Fecha               = DateTime.UtcNow,
-                Estado              = EstadoPedido.Pendiente,
-                Observaciones       = presupuesto.Observaciones,
-                Total               = presupuesto.Total
-            };
+            const int maxIntentos = 3;
 
-            await GuardarConNumeroUnicoAsync(pedido);
-
-            foreach (var linea in presupuesto.Lineas)
+            for (var intento = 1; ; intento++)
             {
-                _context.LineasPedido.Add(new LineaPedido
+                var pedido = new Pedido
                 {
-                    PedidoId       = pedido.Id,
-                    ProductoId     = linea.ProductoId,
-                    Descripcion    = linea.Descripcion,
-                    Cantidad       = linea.Cantidad,
-                    PrecioUnitario = linea.PrecioUnitario,
-                    Subtotal       = linea.Subtotal
-                });
+                    Numero = await GenerarNumeroAsync(),
+                    ClienteId = presupuesto.ClienteId,
+                    PresupuestoOrigenId = presupuesto.Id,
+                    Fecha = DateTime.UtcNow,
+                    Estado = EstadoPedido.Pendiente,
+                    Observaciones = presupuesto.Observaciones,
+                    Total = presupuesto.Total
+                };
+
+                await using var tx = await _context.Database.BeginTransactionAsync();
+
+                _context.Pedidos.Add(pedido);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (EsNumeroDuplicado(ex) && intento < maxIntentos)
+                {
+                    _context.Entry(pedido).State = EntityState.Detached;
+                    continue;
+                }
+
+                foreach (var linea in presupuesto.Lineas)
+                {
+                    _context.LineasPedido.Add(new LineaPedido
+                    {
+                        PedidoId = pedido.Id,
+                        ProductoId = linea.ProductoId,
+                        Descripcion = linea.Descripcion,
+                        Cantidad = linea.Cantidad,
+                        PrecioUnitario = linea.PrecioUnitario,
+                        Subtotal = linea.Subtotal
+                    });
+                }
+
+                presupuesto.PedidoId = pedido.Id;
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return (true, null, pedido);
             }
-
-            presupuesto.PedidoId = pedido.Id;
-            await _context.SaveChangesAsync();
-
-            return (true, null, pedido);
         }
 
         public async Task<(bool Ok, string? Error)> CambiarEstadoAsync(int pedidoId, EstadoPedido nuevoEstado)
@@ -136,11 +138,11 @@ namespace PymeCore.Services
 
             var transicionValida = (pedido.Estado, nuevoEstado) switch
             {
-                (EstadoPedido.Pendiente,     EstadoPedido.EnPreparacion) => true,
-                (EstadoPedido.Pendiente,     EstadoPedido.Cancelado)     => true,
-                (EstadoPedido.EnPreparacion, EstadoPedido.Completado)    => true,
-                (EstadoPedido.EnPreparacion, EstadoPedido.Cancelado)     => true,
-                _                                                         => false
+                (EstadoPedido.Pendiente, EstadoPedido.EnPreparacion) => true,
+                (EstadoPedido.Pendiente, EstadoPedido.Cancelado) => true,
+                (EstadoPedido.EnPreparacion, EstadoPedido.Completado) => true,
+                (EstadoPedido.EnPreparacion, EstadoPedido.Cancelado) => true,
+                _ => false
             };
 
             if (!transicionValida)
@@ -180,9 +182,9 @@ namespace PymeCore.Services
                         var errorStock = await _stockService.RegistrarMovimientoAsync(new MovimientoStock
                         {
                             ProductoId = linea.ProductoId,
-                            Tipo       = TipoMovimiento.Salida,
-                            Cantidad   = linea.Cantidad,
-                            Motivo     = $"Venta - {pedido.Numero}"
+                            Tipo = TipoMovimiento.Salida,
+                            Cantidad = linea.Cantidad,
+                            Motivo = $"Venta - {pedido.Numero}"
                         });
 
                         if (errorStock is not null)

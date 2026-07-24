@@ -54,11 +54,11 @@ namespace PymeCore.Controllers
 
             var presupuesto = new Presupuesto
             {
-                ClienteId     = vm.ClienteId!.Value,
-                Fecha         = DateTime.UtcNow,
-                Estado        = vm.Estado,
+                ClienteId = vm.ClienteId!.Value,
+                Fecha = DateTime.UtcNow,
+                Estado = EstadoPresupuesto.Borrador,
                 Observaciones = vm.Observaciones,
-                Total         = 0
+                Total = 0
             };
 
             await _presupuestoService.CreateAsync(presupuesto);
@@ -70,7 +70,7 @@ namespace PymeCore.Controllers
             var presupuesto = await _presupuestoService.GetByIdAsync(id);
             if (presupuesto is null) return NotFound();
 
-            if (presupuesto.Estado is EstadoPresupuesto.Aceptado or EstadoPresupuesto.Rechazado)
+            if (presupuesto.Estado != EstadoPresupuesto.Borrador)
             {
                 TempData["Error"] = $"Un presupuesto {presupuesto.Estado} no puede editarse.";
                 return RedirectToAction(nameof(Details), new { id });
@@ -78,10 +78,9 @@ namespace PymeCore.Controllers
 
             var vm = new PresupuestoFormViewModel
             {
-                Id            = presupuesto.Id,
-                Numero        = presupuesto.Numero,
-                ClienteId     = presupuesto.ClienteId,
-                Estado        = presupuesto.Estado,
+                Id = presupuesto.Id,
+                Numero = presupuesto.Numero,
+                ClienteId = presupuesto.ClienteId,
                 Observaciones = presupuesto.Observaciones
             };
 
@@ -104,10 +103,10 @@ namespace PymeCore.Controllers
             var presupuesto = await _presupuestoService.GetByIdAsync(id);
             if (presupuesto is null) return NotFound();
 
-            if (presupuesto.Estado is EstadoPresupuesto.Aceptado or EstadoPresupuesto.Rechazado)
+            if (presupuesto.Estado != EstadoPresupuesto.Borrador)
                 return BadRequest();
 
-            presupuesto.ClienteId     = vm.ClienteId!.Value;
+            presupuesto.ClienteId = vm.ClienteId!.Value;
             presupuesto.Observaciones = vm.Observaciones;
 
             await _presupuestoService.UpdateAsync(presupuesto);
@@ -120,7 +119,7 @@ namespace PymeCore.Controllers
         {
             var (ok, error) = await _presupuestoService.EnviarAsync(id);
             if (ok) TempData["Success"] = "Presupuesto enviado al cliente.";
-            else    TempData["Error"]   = error;
+            else TempData["Error"] = error;
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -130,7 +129,7 @@ namespace PymeCore.Controllers
         {
             var (ok, error) = await _presupuestoService.AceptarAsync(id);
             if (ok) TempData["Success"] = "Presupuesto aceptado.";
-            else    TempData["Error"]   = error;
+            else TempData["Error"] = error;
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -140,7 +139,7 @@ namespace PymeCore.Controllers
         {
             var (ok, error) = await _presupuestoService.RechazarAsync(id);
             if (ok) TempData["Success"] = "Presupuesto rechazado.";
-            else    TempData["Error"]   = error;
+            else TempData["Error"] = error;
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -174,10 +173,10 @@ namespace PymeCore.Controllers
 
             var linea = new LineaPresupuesto
             {
-                PresupuestoId  = vm.PresupuestoId,
-                ProductoId     = vm.ProductoId!.Value,
-                Descripcion    = vm.Descripcion,
-                Cantidad       = vm.Cantidad,
+                PresupuestoId = vm.PresupuestoId,
+                ProductoId = vm.ProductoId!.Value,
+                Descripcion = vm.Descripcion,
+                Cantidad = vm.Cantidad,
                 PrecioUnitario = vm.PrecioUnitario
             };
 
@@ -198,7 +197,7 @@ namespace PymeCore.Controllers
                 return RedirectToAction(nameof(Details), new { id = presupuestoId });
             }
 
-            await _presupuestoService.EliminarLineaAsync(lineaId);
+            await _presupuestoService.EliminarLineaAsync(lineaId, presupuestoId);
             return RedirectToAction(nameof(Details), new { id = presupuestoId });
         }
 

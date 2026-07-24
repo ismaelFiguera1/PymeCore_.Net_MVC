@@ -28,38 +28,38 @@ namespace PymeCore.Services
             var dto = new FacturaSnapshotDto
             {
                 NumeroFactura = factura.Numero,
-                FechaEmision  = factura.FechaEmision,
+                FechaEmision = factura.FechaEmision,
                 Empresa = new EmpresaSnapshotDto
                 {
-                    Nombre    = _empresa.Nombre,
-                    Cif       = _empresa.Cif,
+                    Nombre = _empresa.Nombre,
+                    Cif = _empresa.Cif,
                     Direccion = _empresa.Direccion
                 },
                 Cliente = new ClienteSnapshotDto
                 {
-                    Nombre    = pedido.Cliente!.Nombre,
-                    Nif       = pedido.Cliente.Nif,
+                    Nombre = pedido.Cliente!.Nombre,
+                    Nif = pedido.Cliente.Nif,
                     Direccion = pedido.Cliente.Direccion
                 },
                 Lineas = pedido.Lineas.Select(l => new FacturaLineaSnapshotDto
                 {
-                    Descripcion    = l.Descripcion ?? l.Producto?.Nombre ?? string.Empty,
-                    Cantidad       = l.Cantidad,
+                    Descripcion = l.Descripcion ?? l.Producto?.Nombre ?? string.Empty,
+                    Cantidad = l.Cantidad,
                     PrecioUnitario = l.PrecioUnitario,
-                    Subtotal       = l.Subtotal
+                    Subtotal = l.Subtotal
                 }).ToList(),
                 BaseImponible = factura.BaseImponible,
                 PorcentajeIVA = factura.PorcentajeIVA,
-                TotalIVA      = factura.TotalIVA,
-                Total         = factura.Total
+                TotalIVA = factura.TotalIVA,
+                Total = factura.Total
             };
 
             var snapshot = new FacturaSnapshot
             {
-                FacturaId     = factura.Id,
-                DatosJson     = JsonSerializer.Serialize(dto, JsonOptions),
+                FacturaId = factura.Id,
+                DatosJson = JsonSerializer.Serialize(dto, JsonOptions),
                 FechaCreacion = DateTime.UtcNow,
-                Version       = 1
+                Version = 1
             };
 
             _context.FacturaSnapshots.Add(snapshot);
