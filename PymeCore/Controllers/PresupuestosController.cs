@@ -54,7 +54,6 @@ namespace PymeCore.Controllers
 
             var presupuesto = new Presupuesto
             {
-                Numero        = await _presupuestoService.GenerarNumeroAsync(),
                 ClienteId     = vm.ClienteId!.Value,
                 Fecha         = DateTime.UtcNow,
                 Estado        = vm.Estado,

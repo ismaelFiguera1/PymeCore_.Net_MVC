@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PymeCore.Data;
@@ -11,9 +12,11 @@ using PymeCore.Data;
 namespace PymeCore.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260723201521_AddFacturaSnapshots")]
+    partial class AddFacturaSnapshots
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -310,9 +313,6 @@ namespace PymeCore.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.HasIndex("Numero")
-                        .IsUnique();
-
                     b.HasIndex("PedidoId")
                         .IsUnique();
 
@@ -490,9 +490,6 @@ namespace PymeCore.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.HasIndex("Numero")
-                        .IsUnique();
-
                     b.HasIndex("PresupuestoOrigenId");
 
                     b.ToTable("Pedidos");
@@ -533,9 +530,6 @@ namespace PymeCore.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClienteId");
-
-                    b.HasIndex("Numero")
-                        .IsUnique();
 
                     b.ToTable("Presupuestos");
                 });
@@ -681,7 +675,7 @@ namespace PymeCore.Migrations
                     b.HasOne("PymeCore.Models.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PymeCore.Models.Pedido", "Pedido")
@@ -760,7 +754,7 @@ namespace PymeCore.Migrations
                     b.HasOne("PymeCore.Models.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PymeCore.Models.Presupuesto", "PresupuestoOrigen")
@@ -779,7 +773,7 @@ namespace PymeCore.Migrations
                     b.HasOne("PymeCore.Models.Cliente", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Cliente");
