@@ -51,8 +51,8 @@ namespace PymeCore.Controllers
 
             var producto = new Producto
             {
-                Nombre      = vm.Nombre,
-                Sku         = await _productoService.GenerarSkuAsync(vm.Nombre),
+                Nombre = vm.Nombre,
+                Sku = await _productoService.GenerarSkuAsync(vm.Nombre),
                 PrecioCoste = vm.PrecioCoste,
                 PrecioVenta = vm.PrecioVenta,
                 StockActual = 0,
@@ -60,16 +60,22 @@ namespace PymeCore.Controllers
                 ProveedorId = vm.ProveedorId!.Value
             };
 
-            await _productoService.CreateAsync(producto);
+            var (ok, error) = await _productoService.CreateAsync(producto);
+            if (!ok)
+            {
+                ModelState.AddModelError(string.Empty, error!);
+                await CargarProveedoresAsync();
+                return View(vm);
+            }
 
             if (vm.StockActual > 0)
             {
                 await _stockService.RegistrarMovimientoAsync(new Models.MovimientoStock
                 {
                     ProductoId = producto.Id,
-                    Tipo       = Models.TipoMovimiento.Entrada,
-                    Cantidad   = vm.StockActual,
-                    Motivo     = "Stock inicial"
+                    Tipo = Models.TipoMovimiento.Entrada,
+                    Cantidad = vm.StockActual,
+                    Motivo = "Stock inicial"
                 });
             }
 
@@ -83,9 +89,9 @@ namespace PymeCore.Controllers
 
             var vm = new ProductoFormViewModel
             {
-                Id          = producto.Id,
-                Nombre      = producto.Nombre,
-                Sku         = producto.Sku,
+                Id = producto.Id,
+                Nombre = producto.Nombre,
+                Sku = producto.Sku,
                 PrecioCoste = producto.PrecioCoste,
                 PrecioVenta = producto.PrecioVenta,
                 StockActual = producto.StockActual,
@@ -112,13 +118,20 @@ namespace PymeCore.Controllers
             var producto = await _productoService.GetByIdAsync(id);
             if (producto is null) return NotFound();
 
-            producto.Nombre      = vm.Nombre;
+            producto.Nombre = vm.Nombre;
             producto.PrecioCoste = vm.PrecioCoste;
             producto.PrecioVenta = vm.PrecioVenta;
             producto.StockMinimo = vm.StockMinimo;
             producto.ProveedorId = vm.ProveedorId!.Value;
 
-            await _productoService.UpdateAsync(producto);
+            var (ok, error) = await _productoService.UpdateAsync(producto);
+            if (!ok)
+            {
+                ModelState.AddModelError(string.Empty, error!);
+                await CargarProveedoresAsync();
+                return View(vm);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

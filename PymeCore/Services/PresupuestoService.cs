@@ -112,11 +112,11 @@ namespace PymeCore.Services
 
             var nuevo = new Presupuesto
             {
-                ClienteId     = original.ClienteId,
-                Fecha         = DateTime.UtcNow,
-                Estado        = EstadoPresupuesto.Borrador,
+                ClienteId = original.ClienteId,
+                Fecha = DateTime.UtcNow,
+                Estado = EstadoPresupuesto.Borrador,
                 Observaciones = original.Observaciones,
-                Total         = 0
+                Total = 0
             };
 
             await GuardarConNumeroUnicoAsync(nuevo);
@@ -125,12 +125,12 @@ namespace PymeCore.Services
             {
                 _context.LineasPresupuesto.Add(new LineaPresupuesto
                 {
-                    PresupuestoId  = nuevo.Id,
-                    ProductoId     = linea.ProductoId,
-                    Descripcion    = linea.Descripcion,
-                    Cantidad       = linea.Cantidad,
+                    PresupuestoId = nuevo.Id,
+                    ProductoId = linea.ProductoId,
+                    Descripcion = linea.Descripcion,
+                    Cantidad = linea.Cantidad,
                     PrecioUnitario = linea.PrecioUnitario,
-                    Subtotal       = linea.Subtotal
+                    Subtotal = linea.Subtotal
                 });
             }
 
@@ -186,12 +186,12 @@ namespace PymeCore.Services
             await RecalcularTotalAsync(linea.PresupuestoId);
         }
 
-        public async Task EliminarLineaAsync(int lineaId)
+        public async Task EliminarLineaAsync(int lineaId, int presupuestoId)
         {
-            var linea = await _context.LineasPresupuesto.FindAsync(lineaId);
+            var linea = await _context.LineasPresupuesto
+                .FirstOrDefaultAsync(l => l.Id == lineaId && l.PresupuestoId == presupuestoId);
             if (linea is null) return;
 
-            var presupuestoId = linea.PresupuestoId;
             _context.LineasPresupuesto.Remove(linea);
             await _context.SaveChangesAsync();
             await RecalcularTotalAsync(presupuestoId);

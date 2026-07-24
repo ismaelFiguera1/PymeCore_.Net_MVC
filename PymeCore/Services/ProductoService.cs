@@ -90,16 +90,36 @@ namespace PymeCore.Services
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task CreateAsync(Producto producto)
+        public async Task<(bool Ok, string? Error)> CreateAsync(Producto producto)
         {
+            var error = ValidarValoresNoNegativos(producto);
+            if (error is not null) return (false, error);
+
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
+            return (true, null);
         }
 
-        public async Task UpdateAsync(Producto producto)
+        public async Task<(bool Ok, string? Error)> UpdateAsync(Producto producto)
         {
+            var error = ValidarValoresNoNegativos(producto);
+            if (error is not null) return (false, error);
+
             _context.Productos.Update(producto);
             await _context.SaveChangesAsync();
+            return (true, null);
+        }
+
+        // Última barrera antes de guardar: el ViewModel ya bloquea esto en el formulario web,
+        // pero cualquier otro camino que construya un Producto directamente (otro servicio,
+        // una futura API, datos de semilla) pasa también por aquí.
+        private static string? ValidarValoresNoNegativos(Producto producto)
+        {
+            if (producto.PrecioCoste < 0) return "El precio de coste no puede ser negativo.";
+            if (producto.PrecioVenta < 0) return "El precio de venta no puede ser negativo.";
+            if (producto.StockActual < 0) return "El stock actual no puede ser negativo.";
+            if (producto.StockMinimo < 0) return "El stock mínimo no puede ser negativo.";
+            return null;
         }
 
         public async Task<List<Producto>> GetBajoStockAsync()

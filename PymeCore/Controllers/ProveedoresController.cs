@@ -49,12 +49,12 @@ namespace PymeCore.Controllers
 
             var proveedor = new Proveedor
             {
-                Nombre          = vm.Nombre,
-                Cif             = vm.Cif,
+                Nombre = vm.Nombre,
+                Cif = vm.Cif,
                 PersonaContacto = vm.PersonaContacto,
-                Email           = vm.Email,
-                Telefono        = vm.Telefono,
-                Activo          = true
+                Email = vm.Email,
+                Telefono = vm.Telefono,
+                Activo = true
             };
 
             var (ok, error) = await _proveedorService.CreateAsync(proveedor);
@@ -75,12 +75,12 @@ namespace PymeCore.Controllers
 
             var vm = new ProveedorFormViewModel
             {
-                Id              = proveedor.Id,
-                Nombre          = proveedor.Nombre,
-                Cif             = proveedor.Cif,
+                Id = proveedor.Id,
+                Nombre = proveedor.Nombre,
+                Cif = proveedor.Cif,
                 PersonaContacto = proveedor.PersonaContacto,
-                Email           = proveedor.Email,
-                Telefono        = proveedor.Telefono
+                Email = proveedor.Email,
+                Telefono = proveedor.Telefono
             };
 
             return View(vm);
@@ -105,11 +105,11 @@ namespace PymeCore.Controllers
             var proveedor = await _proveedorService.GetByIdAsync(id);
             if (proveedor is null) return NotFound();
 
-            proveedor.Nombre          = vm.Nombre;
-            proveedor.Cif             = vm.Cif;
+            proveedor.Nombre = vm.Nombre;
+            proveedor.Cif = vm.Cif;
             proveedor.PersonaContacto = vm.PersonaContacto;
-            proveedor.Email           = vm.Email;
-            proveedor.Telefono        = vm.Telefono;
+            proveedor.Email = vm.Email;
+            proveedor.Telefono = vm.Telefono;
 
             var (ok, error) = await _proveedorService.UpdateAsync(proveedor);
             if (!ok)

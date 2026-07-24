@@ -52,10 +52,10 @@ namespace PymeCore.Services
         // Convierte el tipo de movimiento en el signo/valor que se le suma al stock actual del producto
         private static int CalcularDelta(TipoMovimiento tipo, int cantidad) => tipo switch
         {
-            TipoMovimiento.Entrada    => cantidad,  // entra stock -> suma
+            TipoMovimiento.Entrada => cantidad,  // entra stock -> suma
             TipoMovimiento.Devolucion => cantidad,  // vuelve stock -> suma
-            TipoMovimiento.Salida     => -cantidad, // sale stock -> resta (se invierte el signo)
-            TipoMovimiento.Ajuste     => cantidad,  // cantidad ya viene con signo: positivo suma, negativo resta
+            TipoMovimiento.Salida => -cantidad, // sale stock -> resta (se invierte el signo)
+            TipoMovimiento.Ajuste => cantidad,  // cantidad ya viene con signo: positivo suma, negativo resta
             _ => 0                                  // tipo no reconocido -> no afecta al stock
         };
     }

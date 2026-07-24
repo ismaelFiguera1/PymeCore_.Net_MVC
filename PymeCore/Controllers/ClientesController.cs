@@ -50,13 +50,13 @@ namespace PymeCore.Controllers
 
             var cliente = new Cliente
             {
-                Nombre    = vm.Nombre,
-                Nif    = vm.Nif,
-                Email     = vm.Email,
-                Telefono  = vm.Telefono,
+                Nombre = vm.Nombre,
+                Nif = vm.Nif,
+                Email = vm.Email,
+                Telefono = vm.Telefono,
                 Direccion = vm.Direccion,
-                Ciudad    = vm.Ciudad,
-                Activo    = true
+                Ciudad = vm.Ciudad,
+                Activo = true
             };
 
             var (ok, error) = await _clienteService.CreateAsync(cliente);
@@ -76,13 +76,13 @@ namespace PymeCore.Controllers
 
             var vm = new ClienteFormViewModel
             {
-                Id        = cliente.Id,
-                Nombre    = cliente.Nombre,
-                Nif    = cliente.Nif,
-                Email     = cliente.Email,
-                Telefono  = cliente.Telefono,
+                Id = cliente.Id,
+                Nombre = cliente.Nombre,
+                Nif = cliente.Nif,
+                Email = cliente.Email,
+                Telefono = cliente.Telefono,
                 Direccion = cliente.Direccion,
-                Ciudad    = cliente.Ciudad
+                Ciudad = cliente.Ciudad
             };
 
             return View(vm);
@@ -108,12 +108,12 @@ namespace PymeCore.Controllers
             var cliente = await _clienteService.GetByIdAsync(id);
             if (cliente is null) return NotFound();
 
-            cliente.Nombre    = vm.Nombre;
-            cliente.Nif    = vm.Nif;
-            cliente.Email     = vm.Email;
-            cliente.Telefono  = vm.Telefono;
+            cliente.Nombre = vm.Nombre;
+            cliente.Nif = vm.Nif;
+            cliente.Email = vm.Email;
+            cliente.Telefono = vm.Telefono;
             cliente.Direccion = vm.Direccion;
-            cliente.Ciudad    = vm.Ciudad;
+            cliente.Ciudad = vm.Ciudad;
 
             var (ok, error) = await _clienteService.UpdateAsync(cliente);
             if (!ok)

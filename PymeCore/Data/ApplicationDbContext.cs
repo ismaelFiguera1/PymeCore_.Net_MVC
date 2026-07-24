@@ -30,6 +30,17 @@ namespace PymeCore.Data
                 .HasIndex(p => p.Sku)
                 .IsUnique();
 
+            // Garantía a nivel de base de datos: aunque algún código (o alguien con acceso
+            // directo a la BD) se salte la validación de ProductoService, PostgreSQL rechaza
+            // igualmente precios o stock negativos.
+            builder.Entity<Producto>().ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Productos_PrecioCoste_NoNegativo", "\"PrecioCoste\" >= 0");
+                t.HasCheckConstraint("CK_Productos_PrecioVenta_NoNegativo", "\"PrecioVenta\" >= 0");
+                t.HasCheckConstraint("CK_Productos_StockActual_NoNegativo", "\"StockActual\" >= 0");
+                t.HasCheckConstraint("CK_Productos_StockMinimo_NoNegativo", "\"StockMinimo\" >= 0");
+            });
+
             builder.Entity<Producto>()
                 .HasOne(p => p.Proveedor)
                 .WithMany()
