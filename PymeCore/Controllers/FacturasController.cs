@@ -36,12 +36,33 @@ namespace PymeCore.Controllers
         [HttpGet]
         public async Task<IActionResult> DescargarPdf(int id)
         {
-            var snapshot = await _snapshotService.GetDtoByFacturaIdAsync(id);
-
-            if (snapshot is null)
+            var factura = await _facturaService.GetByIdAsync(id);
+            if (factura is null)
                 return NotFound();
 
-            var pdf = _pdfService.Generar(snapshot);
+            var (snapshot, error) = await _snapshotService.GetDtoByFacturaIdAsync(id);
+
+            if (snapshot is null)
+            {
+                if (error is null)
+                    return NotFound();
+
+                TempData["Error"] = error;
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            byte[] pdf;
+            try
+            {
+                // El Estado se lee de la factura en vivo, no del snapshot (que está congelado
+                // en el momento de la emisión) — así el PDF siempre refleja si está Anulada.
+                pdf = _pdfService.Generar(snapshot, factura.Estado);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "No se pudo generar el PDF de la factura.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
 
             return File(
                 pdf,

@@ -1,4 +1,5 @@
 using PymeCore.Dtos.Facturas;
+using PymeCore.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -8,10 +9,16 @@ namespace PymeCore.Pdf
     public class FacturaPdfDocument : IDocument
     {
         private readonly FacturaSnapshotDto _snapshot;
+        private readonly EstadoFactura _estado;
 
-        public FacturaPdfDocument(FacturaSnapshotDto snapshot)
+        // El Estado se recibe aparte del snapshot a propósito: el snapshot es la foto
+        // inmutable de cuando se emitió la factura (siempre "Pendiente" en ese momento),
+        // mientras que el Estado puede cambiar después (Pagada/Anulada). El PDF debe
+        // reflejar siempre el estado ACTUAL, no el congelado en el snapshot.
+        public FacturaPdfDocument(FacturaSnapshotDto snapshot, EstadoFactura estado)
         {
             _snapshot = snapshot;
+            _estado = estado;
         }
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
@@ -24,7 +31,12 @@ namespace PymeCore.Pdf
                 page.Margin(2, Unit.Centimetre);
                 page.DefaultTextStyle(x => x.FontSize(10));
 
-                page.Header().Element(ComposeHeader);
+                page.Header().Column(column =>
+                {
+                    column.Item().Element(ComposeHeader);
+                    if (_estado == EstadoFactura.Anulada)
+                        column.Item().Element(ComposeBannerAnulada);
+                });
                 page.Content().Element(ComposeContent);
                 page.Footer().AlignCenter().Text(text =>
                 {
@@ -50,8 +62,24 @@ namespace PymeCore.Pdf
                 {
                     column.Item().Text($"Factura {_snapshot.NumeroFactura}").FontSize(14).Bold();
                     column.Item().Text($"Fecha: {_snapshot.FechaEmision:dd/MM/yyyy}");
+                    column.Item().Text($"Estado: {_estado}");
                 });
             });
+        }
+
+        // Aviso bien visible cuando la factura está anulada, para que el PDF nunca se
+        // pueda confundir con una factura válida solo con mirarlo por encima.
+        private void ComposeBannerAnulada(IContainer container)
+        {
+            container
+                .PaddingTop(8)
+                .Background(Colors.Red.Darken1)
+                .Padding(6)
+                .AlignCenter()
+                .Text("FACTURA ANULADA — NO VÁLIDA")
+                .FontColor(Colors.White)
+                .Bold()
+                .FontSize(13);
         }
 
         private void ComposeContent(IContainer container)

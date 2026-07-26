@@ -67,6 +67,9 @@ namespace PymeCore.Services
             if (pedido.FacturaId is not null)
                 return (false, "Este pedido ya tiene una factura generada.", null);
 
+            if (!pedido.Lineas.Any())
+                return (false, "No se puede facturar un pedido sin líneas.", null);
+
             const decimal porcentajeIva = 21m;
             var baseImponible = pedido.Total;
             var totalIva = Math.Round(baseImponible * porcentajeIva / 100m, 2);
@@ -105,7 +108,11 @@ namespace PymeCore.Services
                 }
 
                 pedido.FacturaId = factura.Id;
-                _snapshotService.Crear(factura, pedido);
+
+                var errorSnapshot = _snapshotService.Crear(factura, pedido);
+                if (errorSnapshot is not null)
+                    return (false, errorSnapshot, null);
+
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
