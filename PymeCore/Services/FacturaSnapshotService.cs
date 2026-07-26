@@ -12,6 +12,8 @@ namespace PymeCore.Services
         private readonly ApplicationDbContext _context;
         private readonly EmpresaOptions _empresa;
 
+        private const int VersionSoportada = 1;
+
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = false
@@ -23,8 +25,15 @@ namespace PymeCore.Services
             _empresa = empresaOptions.Value;
         }
 
-        public void Crear(Factura factura, Pedido pedido)
+        // Devuelve null si el snapshot se creó correctamente, o un mensaje de error si no.
+        // El snapshot es inmutable una vez creado, así que una factura generada con datos
+        // de empresa en blanco quedaría así para siempre — por eso se corta aquí antes de
+        // construirlo, en vez de generar una factura fiscalmente inválida en silencio.
+        public string? Crear(Factura factura, Pedido pedido)
         {
+            var errorEmpresa = ValidarDatosEmpresa();
+            if (errorEmpresa is not null) return errorEmpresa;
+
             var dto = new FacturaSnapshotDto
             {
                 NumeroFactura = factura.Numero,
@@ -43,7 +52,7 @@ namespace PymeCore.Services
                 },
                 Lineas = pedido.Lineas.Select(l => new FacturaLineaSnapshotDto
                 {
-                    Descripcion = l.Descripcion ?? l.Producto?.Nombre ?? string.Empty,
+                    Descripcion = string.IsNullOrWhiteSpace(l.Descripcion) ? (l.Producto?.Nombre ?? string.Empty) : l.Descripcion,
                     Cantidad = l.Cantidad,
                     PrecioUnitario = l.PrecioUnitario,
                     Subtotal = l.Subtotal
@@ -59,21 +68,50 @@ namespace PymeCore.Services
                 FacturaId = factura.Id,
                 DatosJson = JsonSerializer.Serialize(dto, JsonOptions),
                 FechaCreacion = DateTime.UtcNow,
-                Version = 1
+                Version = VersionSoportada
             };
 
             _context.FacturaSnapshots.Add(snapshot);
+            return null;
         }
 
-        public async Task<FacturaSnapshotDto?> GetDtoByFacturaIdAsync(int facturaId)
+        private string? ValidarDatosEmpresa()
+        {
+            if (string.IsNullOrWhiteSpace(_empresa.Nombre))
+                return "Faltan los datos fiscales de la empresa (nombre). Configura EmpresaOptions antes de facturar.";
+            if (string.IsNullOrWhiteSpace(_empresa.Cif))
+                return "Faltan los datos fiscales de la empresa (CIF). Configura EmpresaOptions antes de facturar.";
+            if (string.IsNullOrWhiteSpace(_empresa.Direccion))
+                return "Faltan los datos fiscales de la empresa (dirección). Configura EmpresaOptions antes de facturar.";
+            return null;
+        }
+
+        // Devuelve (null, null) si la factura no tiene snapshot (caso "no encontrado" para
+        // el llamador). Devuelve (null, mensaje) si el snapshot existe pero está corrupto,
+        // vacío o es de una versión que no reconocemos — un error real, no un 404.
+        public async Task<(FacturaSnapshotDto? Snapshot, string? Error)> GetDtoByFacturaIdAsync(int facturaId)
         {
             var snapshot = await _context.FacturaSnapshots
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.FacturaId == facturaId);
 
-            return snapshot is null
-                ? null
-                : JsonSerializer.Deserialize<FacturaSnapshotDto>(snapshot.DatosJson, JsonOptions);
+            if (snapshot is null)
+                return (null, null);
+
+            if (snapshot.Version != VersionSoportada)
+                return (null, $"El histórico de esta factura tiene una versión no soportada ({snapshot.Version}).");
+
+            try
+            {
+                var dto = JsonSerializer.Deserialize<FacturaSnapshotDto>(snapshot.DatosJson, JsonOptions);
+                return dto is null
+                    ? (null, "El histórico de esta factura está vacío o corrupto.")
+                    : (dto, null);
+            }
+            catch (JsonException)
+            {
+                return (null, "El histórico de esta factura está corrupto.");
+            }
         }
     }
 }

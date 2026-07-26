@@ -9,10 +9,12 @@ namespace PymeCore.Services
     public class ProductoService
     {
         private readonly ApplicationDbContext _context;
+        private readonly StockService _stockService;
 
-        public ProductoService(ApplicationDbContext context)
+        public ProductoService(ApplicationDbContext context, StockService stockService)
         {
             _context = context;
+            _stockService = stockService;
         }
 
         // Combina un prefijo de 3 letras (según el nombre) con un número correlativo, ej. "SIL-0004"
@@ -90,13 +92,32 @@ namespace PymeCore.Services
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task<(bool Ok, string? Error)> CreateAsync(Producto producto)
+        // El producto y su stock inicial se guardan en una única transacción: si falla el
+        // movimiento de stock, no debe quedar un producto creado con un stock incorrecto.
+        public async Task<(bool Ok, string? Error)> CreateAsync(Producto producto, int stockInicial)
         {
             var error = ValidarValoresNoNegativos(producto);
             if (error is not null) return (false, error);
 
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
+
+            if (stockInicial > 0)
+            {
+                var errorStock = await _stockService.RegistrarMovimientoAsync(new MovimientoStock
+                {
+                    ProductoId = producto.Id,
+                    Tipo       = TipoMovimiento.Entrada,
+                    Cantidad   = stockInicial,
+                    Motivo     = "Stock inicial"
+                });
+
+                if (errorStock is not null) return (false, errorStock);
+            }
+
+            await tx.CommitAsync();
             return (true, null);
         }
 

@@ -10,13 +10,11 @@ namespace PymeCore.Controllers
     {
         private readonly ProductoService _productoService;
         private readonly ProveedorService _proveedorService;
-        private readonly StockService _stockService;
 
-        public ProductosController(ProductoService productoService, ProveedorService proveedorService, StockService stockService)
+        public ProductosController(ProductoService productoService, ProveedorService proveedorService)
         {
             _productoService = productoService;
             _proveedorService = proveedorService;
-            _stockService = stockService;
         }
 
         public async Task<IActionResult> Index(string? buscar)
@@ -60,23 +58,12 @@ namespace PymeCore.Controllers
                 ProveedorId = vm.ProveedorId!.Value
             };
 
-            var (ok, error) = await _productoService.CreateAsync(producto);
+            var (ok, error) = await _productoService.CreateAsync(producto, vm.StockActual);
             if (!ok)
             {
                 ModelState.AddModelError(string.Empty, error!);
                 await CargarProveedoresAsync();
                 return View(vm);
-            }
-
-            if (vm.StockActual > 0)
-            {
-                await _stockService.RegistrarMovimientoAsync(new Models.MovimientoStock
-                {
-                    ProductoId = producto.Id,
-                    Tipo = Models.TipoMovimiento.Entrada,
-                    Cantidad = vm.StockActual,
-                    Motivo = "Stock inicial"
-                });
             }
 
             return RedirectToAction(nameof(Index));
@@ -137,7 +124,9 @@ namespace PymeCore.Controllers
 
         private async Task CargarProveedoresAsync()
         {
-            var proveedores = await _proveedorService.GetAllAsync();
+            var proveedores = (await _proveedorService.GetAllAsync())
+                .Where(p => p.Activo)
+                .ToList();
             ViewBag.Proveedores = new SelectList(proveedores, "Id", "Nombre");
         }
     }

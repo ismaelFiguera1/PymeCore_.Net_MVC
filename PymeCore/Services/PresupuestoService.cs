@@ -105,39 +105,61 @@ namespace PymeCore.Services
             await _context.SaveChangesAsync();
         }
 
+        // Igual que en PedidoService.CrearDesdePresupuestoAsync: el presupuesto nuevo, sus
+        // líneas copiadas y el total recalculado se guardan en una única transacción, y el
+        // reintento por choque de número (IX_Presupuestos_Numero) repite la operación entera.
         public async Task<Presupuesto> DuplicarAsync(int id)
         {
             var original = await GetByIdAsync(id);
             if (original is null) throw new InvalidOperationException("Presupuesto no encontrado.");
 
-            var nuevo = new Presupuesto
-            {
-                ClienteId = original.ClienteId,
-                Fecha = DateTime.UtcNow,
-                Estado = EstadoPresupuesto.Borrador,
-                Observaciones = original.Observaciones,
-                Total = 0
-            };
+            const int maxIntentos = 3;
 
-            await GuardarConNumeroUnicoAsync(nuevo);
-
-            foreach (var linea in original.Lineas)
+            for (var intento = 1; ; intento++)
             {
-                _context.LineasPresupuesto.Add(new LineaPresupuesto
+                var nuevo = new Presupuesto
                 {
-                    PresupuestoId = nuevo.Id,
-                    ProductoId = linea.ProductoId,
-                    Descripcion = linea.Descripcion,
-                    Cantidad = linea.Cantidad,
-                    PrecioUnitario = linea.PrecioUnitario,
-                    Subtotal = linea.Subtotal
-                });
+                    Numero        = await GenerarNumeroAsync(),
+                    ClienteId     = original.ClienteId,
+                    Fecha         = DateTime.UtcNow,
+                    Estado        = EstadoPresupuesto.Borrador,
+                    Observaciones = original.Observaciones,
+                    Total         = 0
+                };
+
+                await using var tx = await _context.Database.BeginTransactionAsync();
+
+                _context.Presupuestos.Add(nuevo);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (EsNumeroDuplicado(ex) && intento < maxIntentos)
+                {
+                    _context.Entry(nuevo).State = EntityState.Detached;
+                    continue;
+                }
+
+                foreach (var linea in original.Lineas)
+                {
+                    _context.LineasPresupuesto.Add(new LineaPresupuesto
+                    {
+                        PresupuestoId  = nuevo.Id,
+                        ProductoId     = linea.ProductoId,
+                        Descripcion    = linea.Descripcion,
+                        Cantidad       = linea.Cantidad,
+                        PrecioUnitario = linea.PrecioUnitario,
+                        Subtotal       = linea.Subtotal
+                    });
+                }
+
+                nuevo.Total = original.Lineas.Sum(l => l.Subtotal);
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return nuevo;
             }
-
-            await _context.SaveChangesAsync();
-            await RecalcularTotalAsync(nuevo.Id);
-
-            return nuevo;
         }
 
         public async Task<(bool Ok, string? Error)> EnviarAsync(int id)
@@ -178,12 +200,19 @@ namespace PymeCore.Services
             return (true, null);
         }
 
+        // Guardar la línea y recalcular el Total ocurren dentro de la misma transacción:
+        // si falla el recálculo, tampoco queda guardada la línea (todo o nada).
         public async Task AgregarLineaAsync(LineaPresupuesto linea)
         {
             linea.Subtotal = linea.Cantidad * linea.PrecioUnitario;
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
             _context.LineasPresupuesto.Add(linea);
             await _context.SaveChangesAsync();
+
             await RecalcularTotalAsync(linea.PresupuestoId);
+            await tx.CommitAsync();
         }
 
         public async Task EliminarLineaAsync(int lineaId, int presupuestoId)
@@ -192,9 +221,13 @@ namespace PymeCore.Services
                 .FirstOrDefaultAsync(l => l.Id == lineaId && l.PresupuestoId == presupuestoId);
             if (linea is null) return;
 
+            await using var tx = await _context.Database.BeginTransactionAsync();
+
             _context.LineasPresupuesto.Remove(linea);
             await _context.SaveChangesAsync();
+
             await RecalcularTotalAsync(presupuestoId);
+            await tx.CommitAsync();
         }
 
         private async Task RecalcularTotalAsync(int presupuestoId)
