@@ -34,8 +34,8 @@ namespace PymeCore.Pdf
                 page.Header().Column(column =>
                 {
                     column.Item().Element(ComposeHeader);
-                    if (_estado == EstadoFactura.Anulada)
-                        column.Item().Element(ComposeBannerAnulada);
+                    if (_estado is EstadoFactura.Anulada or EstadoFactura.Pagada)
+                        column.Item().Element(ComposeBannerEstado);
                 });
                 page.Content().Element(ComposeContent);
                 page.Footer().AlignCenter().Text(text =>
@@ -67,16 +67,23 @@ namespace PymeCore.Pdf
             });
         }
 
-        // Aviso bien visible cuando la factura está anulada, para que el PDF nunca se
-        // pueda confundir con una factura válida solo con mirarlo por encima.
-        private void ComposeBannerAnulada(IContainer container)
+        // Aviso bien visible según el estado: roja para anulada (para que nunca se pueda
+        // confundir con una factura válida) y verde para pagada.
+        private void ComposeBannerEstado(IContainer container)
         {
+            var (texto, color) = _estado switch
+            {
+                EstadoFactura.Anulada => ("FACTURA ANULADA — NO VÁLIDA", Colors.Red.Darken1),
+                EstadoFactura.Pagada  => ("FACTURA PAGADA", Colors.Green.Darken1),
+                _                     => (string.Empty, Colors.Grey.Darken1)
+            };
+
             container
                 .PaddingTop(8)
-                .Background(Colors.Red.Darken1)
+                .Background(color)
                 .Padding(6)
                 .AlignCenter()
-                .Text("FACTURA ANULADA — NO VÁLIDA")
+                .Text(texto)
                 .FontColor(Colors.White)
                 .Bold()
                 .FontSize(13);
