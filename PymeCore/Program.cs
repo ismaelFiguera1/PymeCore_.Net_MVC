@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ClienteService>();
@@ -28,6 +30,13 @@ builder.Services.AddScoped<FacturaSnapshotService>();
 builder.Services.AddScoped<FacturaPdfService>();
 builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection("EmpresaOptions"));
 
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
 QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
@@ -37,6 +46,15 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
+}
+
+using (var roleScope = app.Services.CreateScope())
+{
+    var roleManager = roleScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await IdentitySeeder.SeedAsync(roleManager);
+
+    var userManager = roleScope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    await IdentitySeeder.SeedAdminAsync(userManager, app.Configuration);
 }
 
 // Configure the HTTP request pipeline.

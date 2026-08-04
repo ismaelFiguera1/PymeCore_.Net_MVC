@@ -1,0 +1,133 @@
+@model IEnumerable<PymeCore.ViewModels.Usuarios.UsuarioListItemViewModel>
+
+@{
+    ViewData["Title"] = "Usuarios";
+    var usuarioActualId = ViewData["UsuarioActualId"] as string;
+    var adminInicialEmail = ViewData["AdminInicialEmail"] as string;
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+        @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<article class="card">
+    <header class="card-header">
+        <h2 class="card-title mb-0">Listado de usuarios</h2>
+    </header>
+    <section class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Email</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var usuario in Model)
+                {
+                    var esUsuarioActual = usuario.Id == usuarioActualId;
+                    var esAdminInicial = !string.IsNullOrEmpty(adminInicialEmail) &&
+                        string.Equals(usuario.Email, adminInicialEmail, StringComparison.OrdinalIgnoreCase);
+
+                    <tr>
+                        <td>@usuario.Email</td>
+                        <td>@usuario.Rol</td>
+                        <td>
+                            @if (usuario.Bloqueado)
+                            {
+                                <span class="badge bg-danger">Bloqueado</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Activo</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (!esUsuarioActual && !esAdminInicial)
+                            {
+                                <a asp-action="Edit" asp-route-id="@usuario.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Editar rol
+                                </a>
+                                @if (usuario.Bloqueado)
+                                {
+                                    <form asp-action="Activate" asp-route-id="@usuario.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-person-check"></i> Activar
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDesactivarUsuario"
+                                            data-id="@usuario.Id"
+                                            data-email="@usuario.Email">
+                                        <i class="bi bi-person-x"></i> Desactivar
+                                    </button>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</article>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="modalDesactivarUsuario" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 class="modal-title fs-6">Confirmar desactivación</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </header>
+            <section class="modal-body">
+                ¿Desactivar a <strong id="modalEmailUsuario"></strong>?
+                <p class="text-muted small mb-0 mt-1">La cuenta no podrá volver a iniciar sesión hasta que se reactive.</p>
+            </section>
+            <footer class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formDesactivarUsuario" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-person-x me-1"></i> Desactivar
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('modalDesactivarUsuario').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('modalEmailUsuario').textContent = btn.dataset.email;
+            document.getElementById('formDesactivarUsuario').action = '/Usuarios/Deactivate/' + btn.dataset.id;
+        });
+    </script>
+}

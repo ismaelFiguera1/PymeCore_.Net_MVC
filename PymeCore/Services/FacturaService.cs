@@ -29,6 +29,7 @@ namespace PymeCore.Services
             return await _context.Facturas
                 .Include(f => f.Cliente)
                 .Include(f => f.Pedido)
+                .Include(f => f.CreadoPorUsuario)
                 .FirstOrDefaultAsync(f => f.Id == id);
         }
 
@@ -50,7 +51,7 @@ namespace PymeCore.Services
             return $"{prefix}{siguiente:D3}";
         }
 
-        public async Task<(bool Ok, string? Error, Factura? Factura)> GenerarDesdePedidoAsync(int pedidoId)
+        public async Task<(bool Ok, string? Error, Factura? Factura)> GenerarDesdePedidoAsync(int pedidoId, string? usuarioId)
         {
             var pedido = await _context.Pedidos
                 .Include(p => p.Cliente)
@@ -91,7 +92,8 @@ namespace PymeCore.Services
                     BaseImponible = baseImponible,
                     PorcentajeIVA = porcentajeIva,
                     TotalIVA = totalIva,
-                    Total = baseImponible + totalIva
+                    Total = baseImponible + totalIva,
+                    CreadoPorUsuarioId = usuarioId
                 };
 
                 await using var transaction = await _context.Database.BeginTransactionAsync();

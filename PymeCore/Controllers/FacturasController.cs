@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using PymeCore.Data;
 using PymeCore.Models;
 using PymeCore.Services;
 
@@ -75,7 +77,8 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GenerarDesdePedido(int pedidoId)
         {
-            var (ok, error, factura) = await _facturaService.GenerarDesdePedidoAsync(pedidoId);
+            var usuarioId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var (ok, error, factura) = await _facturaService.GenerarDesdePedidoAsync(pedidoId, usuarioId);
 
             if (!ok)
             {
@@ -91,6 +94,9 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CambiarEstado(int id, EstadoFactura nuevoEstado)
         {
+            if (nuevoEstado == EstadoFactura.Anulada && !User.IsInRole(AppRoles.Administrador))
+                return Forbid();
+
             var (ok, error) = await _facturaService.CambiarEstadoAsync(id, nuevoEstado);
 
             if (!ok)

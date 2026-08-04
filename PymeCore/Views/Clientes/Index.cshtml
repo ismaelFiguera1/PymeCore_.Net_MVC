@@ -85,25 +85,28 @@
                             <a asp-action="Edit" asp-route-id="@cliente.Id" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            @if (cliente.Activo)
+                            @if (User.IsInRole(PymeCore.Data.AppRoles.Administrador))
                             {
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-danger"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalDesactivarCliente"
-                                        data-id="@cliente.Id"
-                                        data-nombre="@cliente.Nombre">
-                                    <i class="bi bi-person-x"></i>
-                                </button>
-                            }
-                            else
-                            {
-                                <form asp-action="Activate" asp-route-id="@cliente.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-success">
-                                        <i class="bi bi-person-check"></i>
+                                @if (cliente.Activo)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDesactivarCliente"
+                                            data-id="@cliente.Id"
+                                            data-nombre="@cliente.Nombre">
+                                        <i class="bi bi-person-x"></i>
                                     </button>
-                                </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activate" asp-route-id="@cliente.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-person-check"></i>
+                                        </button>
+                                    </form>
+                                }
                             }
                         </td>
                     </tr>

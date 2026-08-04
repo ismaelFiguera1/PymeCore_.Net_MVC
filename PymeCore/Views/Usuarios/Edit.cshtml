@@ -1,0 +1,41 @@
+@model PymeCore.ViewModels.Usuarios.UsuarioEditViewModel
+
+@{
+    ViewData["Title"] = "Editar rol";
+}
+
+<article class="card" style="max-width: 500px;">
+    <header class="card-header">
+        <h2 class="card-title mb-0">Editar rol de usuario</h2>
+    </header>
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" />
+        <section class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input value="@Model.Email" class="form-control" disabled readonly />
+            </div>
+            <div class="mb-3">
+                <label asp-for="Rol" class="form-label"></label>
+                <select asp-for="Rol" class="form-select">
+                    @foreach (var rol in PymeCore.Data.AppRoles.Todos)
+                    {
+                        <option value="@rol">@rol</option>
+                    }
+                </select>
+                <span asp-validation-for="Rol" class="text-danger small"></span>
+            </div>
+        </section>
+        <footer class="card-footer">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm ms-1">Cancelar</a>
+        </footer>
+    </form>
+</article>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

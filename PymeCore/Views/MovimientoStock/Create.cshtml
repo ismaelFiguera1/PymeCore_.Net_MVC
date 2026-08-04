@@ -19,8 +19,7 @@
 
             <div class="mb-3">
                 <label asp-for="Tipo" class="form-label"></label>
-                <select asp-for="Tipo" class="form-select"
-                        asp-items="Html.GetEnumSelectList<PymeCore.Models.TipoMovimiento>()">
+                <select asp-for="Tipo" class="form-select" asp-items="ViewBag.TiposMovimiento">
                     <option value="">-- Selecciona tipo --</option>
                 </select>
                 <span asp-validation-for="Tipo" class="text-danger small"></span>

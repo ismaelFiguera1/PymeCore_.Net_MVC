@@ -79,6 +79,15 @@
                             <p>Facturas</p>
                         </a>
                     </li>
+                    @if (User.IsInRole(PymeCore.Data.AppRoles.Administrador))
+                    {
+                        <li class="nav-item">
+                            <a asp-controller="Usuarios" asp-action="Index" class="nav-link">
+                                <i class="nav-icon bi bi-person-gear"></i>
+                                <p>Usuarios</p>
+                            </a>
+                        </li>
+                    }
                 </ul>
             </nav>
         </div>

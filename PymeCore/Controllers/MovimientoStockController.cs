@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using PymeCore.Data;
 using PymeCore.Models;
 using PymeCore.Services;
 using PymeCore.ViewModels.Stock;
@@ -39,6 +41,7 @@ namespace PymeCore.Controllers
                 StockActual = producto.StockActual
             };
 
+            CargarTiposMovimiento();
             return View(vm);
         }
 
@@ -46,6 +49,9 @@ namespace PymeCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(MovimientoStockFormViewModel vm)
         {
+            if (vm.Tipo == TipoMovimiento.Ajuste && !User.IsInRole(AppRoles.Administrador))
+                return Forbid();
+
             if (vm.Tipo != TipoMovimiento.Ajuste && vm.Cantidad <= 0)
                 ModelState.AddModelError(nameof(vm.Cantidad), "La cantidad debe ser mayor que cero.");
 
@@ -54,6 +60,7 @@ namespace PymeCore.Controllers
                 var producto = await _productoService.GetByIdAsync(vm.ProductoId);
                 vm.NombreProducto = producto?.Nombre ?? string.Empty;
                 vm.StockActual = producto?.StockActual ?? 0;
+                CargarTiposMovimiento();
                 return View(vm);
             }
 
@@ -72,10 +79,21 @@ namespace PymeCore.Controllers
                 var producto = await _productoService.GetByIdAsync(vm.ProductoId);
                 vm.NombreProducto = producto?.Nombre ?? string.Empty;
                 vm.StockActual = producto?.StockActual ?? 0;
+                CargarTiposMovimiento();
                 return View(vm);
             }
 
             return RedirectToAction(nameof(Index), new { productoId = vm.ProductoId });
+        }
+
+        private void CargarTiposMovimiento()
+        {
+            var tipos = Enum.GetValues<TipoMovimiento>()
+                .Where(t => t != TipoMovimiento.Ajuste || User.IsInRole(AppRoles.Administrador))
+                .Select(t => new SelectListItem { Value = t.ToString(), Text = t.ToString() })
+                .ToList();
+
+            ViewBag.TiposMovimiento = new SelectList(tipos, "Value", "Text");
         }
     }
 }

@@ -53,6 +53,9 @@
                     @Model.Pedido?.Numero
                 </a>
             </dd>
+
+            <dt class="col-sm-4">Creada por</dt>
+            <dd class="col-sm-8">@(Model.CreadoPorUsuario?.Email ?? "—")</dd>
         </dl>
     </section>
     <footer class="card-footer d-flex gap-2 flex-wrap">
@@ -73,14 +76,17 @@
                     <i class="bi bi-check-circle me-1"></i> Marcar como pagada
                 </button>
             </form>
-            <form asp-action="CambiarEstado" method="post" class="d-inline">
-                <input type="hidden" name="id" value="@Model.Id" />
-                <input type="hidden" name="nuevoEstado" value="@EstadoFactura.Anulada" />
-                <button type="submit" class="btn btn-outline-danger btn-sm"
-                        onclick="return confirm('¿Anular la factura @Model.Numero?')">
-                    <i class="bi bi-x-circle me-1"></i> Anular factura
-                </button>
-            </form>
+            @if (User.IsInRole(PymeCore.Data.AppRoles.Administrador))
+            {
+                <form asp-action="CambiarEstado" method="post" class="d-inline">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="nuevoEstado" value="@EstadoFactura.Anulada" />
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('¿Anular la factura @Model.Numero?')">
+                        <i class="bi bi-x-circle me-1"></i> Anular factura
+                    </button>
+                </form>
+            }
         }
     </footer>
 </article>

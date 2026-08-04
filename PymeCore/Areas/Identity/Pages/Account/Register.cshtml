@@ -1,0 +1,45 @@
+@page
+@model PymeCore.Areas.Identity.Pages.Account.RegisterModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Crear cuenta";
+}
+
+<article class="card" style="max-width: 500px;">
+    <header class="card-header">
+        <h2 class="card-title mb-0">@ViewData["Title"]</h2>
+    </header>
+    <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+        <section class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="Input.Email" class="form-label"></label>
+                <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Password" class="form-label"></label>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.Password" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+            </div>
+        </section>
+        <footer class="card-footer">
+            <button id="registerSubmit" type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-lg me-1"></i> Registrarse
+            </button>
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-secondary btn-sm ms-1">
+                Ya tengo cuenta
+            </a>
+        </footer>
+    </form>
+</article>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

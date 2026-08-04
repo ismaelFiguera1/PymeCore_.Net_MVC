@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PymeCore.Data;
 using PymeCore.Models;
 using PymeCore.Services;
 using PymeCore.ViewModels.Clientes;
@@ -127,6 +129,7 @@ namespace PymeCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> Deactivate(int id)
         {
             var (ok, error) = await _clienteService.DeactivateAsync(id);
@@ -136,6 +139,7 @@ namespace PymeCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.Administrador)]
         public async Task<IActionResult> Activate(int id)
         {
             var (ok, error) = await _clienteService.ActivateAsync(id);

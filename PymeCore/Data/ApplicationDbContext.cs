@@ -109,6 +109,12 @@ namespace PymeCore.Data
                 .HasIndex(f => f.PedidoId)
                 .IsUnique();
 
+            builder.Entity<Factura>()
+                .HasOne(f => f.CreadoPorUsuario)
+                .WithMany()
+                .HasForeignKey(f => f.CreadoPorUsuarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<FacturaSnapshot>()
                 .HasOne(s => s.Factura)
                 .WithOne()

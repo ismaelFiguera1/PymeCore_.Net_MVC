@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace PymeCore.Models
 {
@@ -41,5 +42,8 @@ namespace PymeCore.Models
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal Total { get; set; }
+
+        public string? CreadoPorUsuarioId { get; set; }
+        public IdentityUser? CreadoPorUsuario { get; set; }
     }
 }
