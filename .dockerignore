@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/node_modules/
+.git/
+.vs/
+.github/
+graphify-out/
+PymeCore.zip
+PymeCore_Mini_ERP_Proyecto.pdf
+PymeCore/PymeCore_Facturas_PDF_Snapshot.md
+PymeCore/chat.txt
+PymeCore/appsettings.json
+PymeCore/appsettings.Development.json
+PymeCore.Tests/
