@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -55,7 +56,9 @@ builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<FacturaService>();
 builder.Services.AddScoped<FacturaSnapshotService>();
 builder.Services.AddScoped<FacturaPdfService>();
+builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection("EmpresaOptions"));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 builder.Services.AddAuthorization(options =>
 {
