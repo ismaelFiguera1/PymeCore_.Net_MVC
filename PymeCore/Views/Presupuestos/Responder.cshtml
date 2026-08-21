@@ -1,0 +1,87 @@
+@model PymeCore.ViewModels.Presupuestos.ResponderPresupuestoViewModel
+
+@{
+    ViewData["Title"] = "Confirmar presupuesto";
+    Layout = "/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="d-flex align-items-center justify-content-center py-5">
+    <div class="w-100" style="max-width: 640px;">
+        @if (!Model.EsValido)
+        {
+            <article class="card">
+                <section class="card-body text-center py-5">
+                    <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                    <h1 class="h4 mt-3 mb-0">Este enlace no es válido</h1>
+                    <p class="text-muted mb-0">Puede que haya caducado o que ya se haya utilizado.</p>
+                </section>
+            </article>
+        }
+        else
+        {
+            var textoDecision = Model.Decision == "aceptar" ? "aceptar" : "rechazar";
+            var claseDecision = Model.Decision == "aceptar" ? "text-success" : "text-danger";
+
+            <article class="card">
+                <header class="card-header">
+                    <h1 class="h5 mb-0">Confirmar presupuesto <code>@Model.Numero</code></h1>
+                </header>
+                <section class="card-body">
+                    <dl class="row mb-3">
+                        <dt class="col-sm-4">Cliente</dt>
+                        <dd class="col-sm-8">@Model.ClienteNombre</dd>
+
+                        <dt class="col-sm-4">Fecha</dt>
+                        <dd class="col-sm-8">@Model.Fecha.ToLocalTime().ToString("dd/MM/yyyy")</dd>
+
+                        <dt class="col-sm-4">Observaciones</dt>
+                        <dd class="col-sm-8">@(Model.Observaciones ?? "—")</dd>
+                    </dl>
+
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Producto</th>
+                                <th scope="col">Descripción</th>
+                                <th scope="col" class="text-end">Cantidad</th>
+                                <th scope="col" class="text-end">Precio unit.</th>
+                                <th scope="col" class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var linea in Model.Lineas)
+                            {
+                                <tr>
+                                    <td>@linea.Producto</td>
+                                    <td>@(linea.Descripcion ?? "—")</td>
+                                    <td class="text-end">@linea.Cantidad</td>
+                                    <td class="text-end">@linea.PrecioUnitario.ToString("N2") €</td>
+                                    <td class="text-end">@linea.Subtotal.ToString("N2") €</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="4" class="text-end">Total</td>
+                                <td class="text-end">@Model.Total.ToString("N2") €</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <p class="mb-3">
+                        Vas a <strong class="@claseDecision">@textoDecision</strong> este presupuesto.
+                    </p>
+
+                    <form asp-action="ConfirmarRespuesta" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="token" value="@Model.Token" />
+                        <input type="hidden" name="decision" value="@Model.Decision" />
+                        <button type="submit" class="btn @(Model.Decision == "aceptar" ? "btn-success" : "btn-danger") w-100">
+                            Confirmar @textoDecision
+                        </button>
+                    </form>
+                </section>
+            </article>
+        }
+    </div>
+</div>

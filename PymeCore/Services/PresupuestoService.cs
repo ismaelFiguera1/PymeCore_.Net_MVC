@@ -1,3 +1,11 @@
+using System.Globalization;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PymeCore.Data;
@@ -8,10 +16,14 @@ namespace PymeCore.Services
     public class PresupuestoService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailSender _emailSender;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public PresupuestoService(ApplicationDbContext context)
+        public PresupuestoService(ApplicationDbContext context, IEmailSender emailSender, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _emailSender = emailSender;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<Presupuesto>> GetAllAsync(string? buscar = null)
@@ -162,6 +174,8 @@ namespace PymeCore.Services
             }
         }
 
+        private static readonly Regex FormatoEmail = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
+
         public async Task<(bool Ok, string? Error)> EnviarAsync(int id)
         {
             var presupuesto = await GetByIdAsync(id);
@@ -171,33 +185,137 @@ namespace PymeCore.Services
             if (!presupuesto.Lineas.Any())
                 return (false, "No se puede enviar un presupuesto sin líneas. Añade al menos una.");
 
+            if (presupuesto.Cliente is null)
+                return (false, "El presupuesto no tiene un cliente asociado.");
+
+            if (string.IsNullOrWhiteSpace(presupuesto.Cliente.Email))
+                return (false, "El cliente no tiene ningún email registrado. Añádelo desde su ficha antes de enviar el presupuesto.");
+
+            if (!FormatoEmail.IsMatch(presupuesto.Cliente.Email))
+                return (false, $"El email del cliente ('{presupuesto.Cliente.Email}') no tiene un formato válido. Corrígelo desde su ficha antes de enviar el presupuesto.");
+
+            // Token de un solo uso para que el cliente pueda responder desde el correo sin tener
+            // cuenta en PymeCore. Se genera aquí (no antes) porque solo debe quedar preparado si
+            // el envío llega a completarse; nunca se guarda ni se registra el token en claro, solo
+            // su hash SHA-256 (64 caracteres hex, ya previsto en TokenRespuestaHash).
+            var tokenBytes = RandomNumberGenerator.GetBytes(32);
+            var tokenParaUrl = WebEncoders.Base64UrlEncode(tokenBytes);
+            var tokenHash = CalcularHashToken(tokenParaUrl);
+            var tokenExpiraUtc = DateTime.UtcNow.AddDays(7);
+
+            var request = _httpContextAccessor.HttpContext!.Request;
+            var baseUrl = $"{request.Scheme}://{request.Host}";
+            var urlAceptar = $"{baseUrl}/Presupuestos/Responder?token={tokenParaUrl}&decision=aceptar";
+            var urlRechazar = $"{baseUrl}/Presupuestos/Responder?token={tokenParaUrl}&decision=rechazar";
+
+            // El correo se envía y se espera a que termine ANTES de tocar el estado: si Gmail no lo
+            // acepta (fallo de conexión, autenticación, etc.), no debe quedar como "Enviado" ni
+            // guardarse el token/caducidad de una respuesta que nunca se pudo ofrecer al cliente.
+            try
+            {
+                await _emailSender.SendEmailAsync(
+                    presupuesto.Cliente.Email,
+                    $"Presupuesto {presupuesto.Numero}",
+                    ConstruirCuerpoHtml(presupuesto, urlAceptar, urlRechazar));
+            }
+            catch (Exception)
+            {
+                return (false, "No se ha podido enviar el correo al cliente. Inténtalo de nuevo más tarde.");
+            }
+
             presupuesto.Estado = EstadoPresupuesto.Enviado;
+            presupuesto.TokenRespuestaHash = tokenHash;
+            presupuesto.TokenRespuestaExpiraUtc = tokenExpiraUtc;
             await _context.SaveChangesAsync();
             return (true, null);
         }
 
-        public async Task<(bool Ok, string? Error)> AceptarAsync(int id)
-        {
-            var presupuesto = await GetByIdAsync(id);
-            if (presupuesto is null) return (false, "Presupuesto no encontrado.");
-            if (presupuesto.Estado != EstadoPresupuesto.Enviado)
-                return (false, $"Solo se puede aceptar un presupuesto en estado Enviado (estado actual: {presupuesto.Estado}).");
+        private static string CalcularHashToken(string token) =>
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
 
-            presupuesto.Estado = EstadoPresupuesto.Aceptado;
-            await _context.SaveChangesAsync();
-            return (true, null);
+        // Usado por la página pública de confirmación (GET /Presupuestos/Responder): recalcula el
+        // hash del token recibido y solo devuelve el presupuesto si el hash coincide, sigue en
+        // estado Enviado y el token no ha caducado. Cualquier fallo se trata igual (null), para que
+        // el llamador muestre siempre el mismo mensaje genérico sin revelar cuál fue el problema.
+        public async Task<Presupuesto?> ValidarTokenRespuestaAsync(string? token)
+        {
+            if (string.IsNullOrWhiteSpace(token)) return null;
+
+            var tokenHash = CalcularHashToken(token);
+
+            var presupuesto = await _context.Presupuestos
+                .Include(p => p.Cliente)
+                .Include(p => p.Lineas)
+                    .ThenInclude(l => l.Producto)
+                .FirstOrDefaultAsync(p => p.TokenRespuestaHash == tokenHash);
+
+            if (presupuesto is null) return null;
+            if (presupuesto.Estado != EstadoPresupuesto.Enviado) return null;
+            if (presupuesto.TokenRespuestaExpiraUtc is null || presupuesto.TokenRespuestaExpiraUtc <= DateTime.UtcNow) return null;
+
+            return presupuesto;
         }
 
-        public async Task<(bool Ok, string? Error)> RechazarAsync(int id)
+        // Usado por el POST público (ConfirmarRespuesta): repite TODAS las comprobaciones de
+        // ValidarTokenRespuestaAsync (hash, caducidad, estado Enviado) y además valida la propia
+        // decisión. Si cualquier cosa falla, no toca la entidad ni llama a SaveChangesAsync.
+        public async Task<(bool Ok, string? Numero, string? Decision)> ConfirmarRespuestaAsync(string? token, string? decision)
         {
-            var presupuesto = await GetByIdAsync(id);
-            if (presupuesto is null) return (false, "Presupuesto no encontrado.");
-            if (presupuesto.Estado != EstadoPresupuesto.Enviado)
-                return (false, $"Solo se puede rechazar un presupuesto en estado Enviado (estado actual: {presupuesto.Estado}).");
+            if (decision != "aceptar" && decision != "rechazar")
+                return (false, null, null);
 
-            presupuesto.Estado = EstadoPresupuesto.Rechazado;
+            var presupuesto = await ValidarTokenRespuestaAsync(token);
+            if (presupuesto is null)
+                return (false, null, null);
+
+            presupuesto.Estado = decision == "aceptar" ? EstadoPresupuesto.Aceptado : EstadoPresupuesto.Rechazado;
+
+            // Token de un solo uso: una vez consumido, ya no debe servir para volver a confirmar
+            // (ni el enlace de "aceptar" ni el de "rechazar" del mismo correo funcionarán de nuevo).
+            presupuesto.TokenRespuestaHash = null;
+            presupuesto.TokenRespuestaExpiraUtc = null;
+
             await _context.SaveChangesAsync();
-            return (true, null);
+
+            return (true, presupuesto.Numero, decision);
+        }
+
+        private static string ConstruirCuerpoHtml(Presupuesto presupuesto, string urlAceptar, string urlRechazar)
+        {
+            var cultura = CultureInfo.GetCultureInfo("es-ES");
+            var sb = new StringBuilder();
+
+            sb.Append($"<h2>Presupuesto {WebUtility.HtmlEncode(presupuesto.Numero)}</h2>");
+            sb.Append($"<p>Fecha: {presupuesto.Fecha.ToLocalTime():dd/MM/yyyy}</p>");
+
+            sb.Append("<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;\">");
+            sb.Append("<thead><tr><th>Producto</th><th>Descripción</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>");
+            sb.Append("<tbody>");
+            foreach (var linea in presupuesto.Lineas)
+            {
+                sb.Append("<tr>");
+                sb.Append($"<td>{WebUtility.HtmlEncode(linea.Producto?.Nombre)}</td>");
+                sb.Append($"<td>{WebUtility.HtmlEncode(linea.Descripcion)}</td>");
+                sb.Append($"<td>{linea.Cantidad}</td>");
+                sb.Append($"<td>{linea.PrecioUnitario.ToString("N2", cultura)} €</td>");
+                sb.Append($"<td>{linea.Subtotal.ToString("N2", cultura)} €</td>");
+                sb.Append("</tr>");
+            }
+            sb.Append("</tbody></table>");
+
+            sb.Append($"<p><strong>Total: {presupuesto.Total.ToString("N2", cultura)} €</strong></p>");
+
+            if (!string.IsNullOrWhiteSpace(presupuesto.Observaciones))
+            {
+                sb.Append($"<p>Observaciones: {WebUtility.HtmlEncode(presupuesto.Observaciones)}</p>");
+            }
+
+            sb.Append("<p>");
+            sb.Append($"<a href=\"{WebUtility.HtmlEncode(urlAceptar)}\" style=\"display:inline-block;padding:10px 20px;margin-right:10px;background-color:#198754;color:#ffffff;text-decoration:none;border-radius:4px;\">Aceptar presupuesto</a>");
+            sb.Append($"<a href=\"{WebUtility.HtmlEncode(urlRechazar)}\" style=\"display:inline-block;padding:10px 20px;background-color:#dc3545;color:#ffffff;text-decoration:none;border-radius:4px;\">Rechazar presupuesto</a>");
+            sb.Append("</p>");
+
+            return sb.ToString();
         }
 
         // Guardar la línea y recalcular el Total ocurren dentro de la misma transacción:

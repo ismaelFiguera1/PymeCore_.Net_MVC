@@ -20,6 +20,7 @@ namespace PymeCore.ViewModels.Clientes
         [Required(ErrorMessage = "El email es obligatorio")]
         [EmailAddress(ErrorMessage = "Formato de email no válido")]
         [MaxLength(50, ErrorMessage = "El email no puede superar los 50 caracteres")]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Introduce un correo completo, por ejemplo usuario@empresa.com")]
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
 

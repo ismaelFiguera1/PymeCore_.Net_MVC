@@ -36,5 +36,10 @@ namespace PymeCore.Models
         public ICollection<LineaPresupuesto> Lineas { get; set; } = new List<LineaPresupuesto>();
 
         public int? PedidoId { get; set; }
+
+        [MaxLength(64)]
+        public string? TokenRespuestaHash { get; set; }
+
+        public DateTime? TokenRespuestaExpiraUtc { get; set; }
     }
 }
