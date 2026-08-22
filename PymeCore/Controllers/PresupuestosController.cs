@@ -119,7 +119,7 @@ namespace PymeCore.Controllers
         public async Task<IActionResult> Enviar(int id)
         {
             var (ok, error) = await _presupuestoService.EnviarAsync(id);
-            if (ok) TempData["Success"] = "Presupuesto enviado al cliente.";
+            if (ok) TempData["Success"] = "Presupuesto enviado al email del cliente.";
             else TempData["Error"] = error;
             return RedirectToAction(nameof(Details), new { id });
         }

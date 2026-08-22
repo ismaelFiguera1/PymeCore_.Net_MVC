@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Net;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PymeCore.Data;
@@ -9,11 +12,19 @@ namespace PymeCore.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly FacturaSnapshotService _snapshotService;
+        private readonly FacturaPdfService _pdfService;
+        private readonly EmailService _emailService;
 
-        public FacturaService(ApplicationDbContext context, FacturaSnapshotService snapshotService)
+        public FacturaService(
+            ApplicationDbContext context,
+            FacturaSnapshotService snapshotService,
+            FacturaPdfService pdfService,
+            EmailService emailService)
         {
             _context = context;
             _snapshotService = snapshotService;
+            _pdfService = pdfService;
+            _emailService = emailService;
         }
 
         public async Task<List<Factura>> GetAllAsync()
@@ -146,6 +157,79 @@ namespace PymeCore.Services
             factura.Estado = nuevoEstado;
             await _context.SaveChangesAsync();
             return (true, null);
+        }
+
+        private static readonly Regex FormatoEmail = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
+
+        // Envía (o reenvía) el PDF de la factura al cliente por email. No cambia el Estado:
+        // es solo una notificación, a diferencia de PresupuestoService.EnviarAsync, que sí
+        // marca el presupuesto como Enviado.
+        public async Task<(bool Ok, string? Error)> EnviarPorEmailAsync(int id)
+        {
+            var factura = await _context.Facturas
+                .Include(f => f.Cliente)
+                .Include(f => f.Pedido)
+                .FirstOrDefaultAsync(f => f.Id == id);
+
+            if (factura is null) return (false, "Factura no encontrada.");
+
+            if (factura.Estado == EstadoFactura.Anulada)
+                return (false, "No se puede enviar por email una factura anulada.");
+
+            if (factura.Pedido is null)
+                return (false, "La factura no tiene un pedido de origen asociado.");
+
+            if (factura.Cliente is null)
+                return (false, "La factura no tiene un cliente asociado.");
+
+            if (string.IsNullOrWhiteSpace(factura.Cliente.Email))
+                return (false, "El cliente no tiene ningún email registrado. Añádelo desde su ficha antes de enviar la factura.");
+
+            if (!FormatoEmail.IsMatch(factura.Cliente.Email))
+                return (false, $"El email del cliente ('{factura.Cliente.Email}') no tiene un formato válido. Corrígelo desde su ficha antes de enviar la factura.");
+
+            var (snapshot, error) = await _snapshotService.GetDtoByFacturaIdAsync(id);
+            if (snapshot is null)
+                return (false, error ?? "No se encontró el histórico de esta factura.");
+
+            byte[] pdf;
+            try
+            {
+                pdf = _pdfService.Generar(snapshot, factura.Estado);
+            }
+            catch (Exception)
+            {
+                return (false, "No se pudo generar el PDF de la factura.");
+            }
+
+            try
+            {
+                await _emailService.SendEmailWithAttachmentAsync(
+                    factura.Cliente.Email,
+                    $"Factura {factura.Numero}",
+                    ConstruirCuerpoHtml(factura),
+                    pdf,
+                    $"Factura_{factura.Numero}.pdf");
+            }
+            catch (Exception)
+            {
+                return (false, "No se ha podido enviar el correo al cliente. Inténtalo de nuevo más tarde.");
+            }
+
+            return (true, null);
+        }
+
+        private static string ConstruirCuerpoHtml(Factura factura)
+        {
+            var cultura = CultureInfo.GetCultureInfo("es-ES");
+
+            return $"""
+                <h2>Factura {WebUtility.HtmlEncode(factura.Numero)}</h2>
+                <p>Fecha de emisión: {factura.FechaEmision.ToLocalTime():dd/MM/yyyy}</p>
+                <p>Pedido de origen: {WebUtility.HtmlEncode(factura.Pedido!.Numero)}</p>
+                <p><strong>Total: {factura.Total.ToString("N2", cultura)} €</strong></p>
+                <p>Adjuntamos el PDF de la factura.</p>
+                """;
         }
     }
 }

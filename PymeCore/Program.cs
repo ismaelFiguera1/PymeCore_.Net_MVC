@@ -30,7 +30,8 @@ builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<FacturaService>();
 builder.Services.AddScoped<FacturaSnapshotService>();
 builder.Services.AddScoped<FacturaPdfService>();
-builder.Services.AddScoped<IEmailSender, EmailService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailSender>(sp => sp.GetRequiredService<EmailService>());
 builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection("EmpresaOptions"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 

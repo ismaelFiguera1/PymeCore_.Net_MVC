@@ -92,6 +92,16 @@ namespace PymeCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            var (ok, error) = await _facturaService.EnviarPorEmailAsync(id);
+            if (ok) TempData["Success"] = "Factura enviada por email al cliente.";
+            else TempData["Error"] = error;
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CambiarEstado(int id, EstadoFactura nuevoEstado)
         {
             if (nuevoEstado == EstadoFactura.Anulada && !User.IsInRole(AppRoles.Administrador))
