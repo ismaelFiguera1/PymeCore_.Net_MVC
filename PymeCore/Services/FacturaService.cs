@@ -219,16 +219,64 @@ namespace PymeCore.Services
             return (true, null);
         }
 
+        // Mismo verde que usa FacturaPdfDocument para el banner "FACTURA PAGADA"
+        // (QuestPDF.Helpers.Colors.Green.Darken1 = #43A047), para que el correo y el PDF
+        // compartan el mismo color corporativo.
+        private const string ColorCorporativo = "#43A047";
+
         private static string ConstruirCuerpoHtml(Factura factura)
         {
             var cultura = CultureInfo.GetCultureInfo("es-ES");
 
+            // Los únicos datos que pueden contener texto libre introducido por un usuario
+            // (nombre de cliente) o generado por el sistema pero mostrado tal cual (números
+            // de factura/pedido) se escapan con HtmlEncode antes de insertarlos en el HTML.
+            var numero = WebUtility.HtmlEncode(factura.Numero);
+            var pedidoNumero = WebUtility.HtmlEncode(factura.Pedido!.Numero);
+            var clienteNombre = WebUtility.HtmlEncode(factura.Cliente!.Nombre);
+            var fecha = factura.FechaEmision.ToLocalTime().ToString("dd/MM/yyyy");
+            var total = $"{factura.Total.ToString("N2", cultura)} €";
+
             return $"""
-                <h2>Factura {WebUtility.HtmlEncode(factura.Numero)}</h2>
-                <p>Fecha de emisión: {factura.FechaEmision.ToLocalTime():dd/MM/yyyy}</p>
-                <p>Pedido de origen: {WebUtility.HtmlEncode(factura.Pedido!.Numero)}</p>
-                <p><strong>Total: {factura.Total.ToString("N2", cultura)} €</strong></p>
-                <p>Adjuntamos el PDF de la factura.</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+                    <tr>
+                        <td align="center" style="padding:24px 16px;">
+                            <table role="presentation" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:100%; max-width:680px; font-family: Arial, Helvetica, sans-serif; color:#202124;">
+                                <tr>
+                                    <td style="padding:24px;">
+                                        <h1 style="margin:0 0 12px 0; font-size:22px; color:{ColorCorporativo};">PymeCore</h1>
+                                        <div style="border-top:3px solid {ColorCorporativo}; margin:0 0 20px 0; font-size:0; line-height:0;">&nbsp;</div>
+
+                                        <p style="margin:0 0 16px 0; font-size:14px;">Hola, {clienteNombre}:</p>
+                                        <p style="margin:0 0 20px 0; font-size:14px;">Te enviamos adjunta la factura {numero}, correspondiente al pedido {pedidoNumero}.</p>
+
+                                        <table role="presentation" width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse; margin:0 0 20px 0; font-size:14px;">
+                                            <tr style="background-color:#f8f9fa;">
+                                                <td style="border:1px solid #dadce0; font-weight:bold; width:40%;">Fecha de emisión:</td>
+                                                <td style="border:1px solid #dadce0;">{fecha}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border:1px solid #dadce0; font-weight:bold;">Pedido:</td>
+                                                <td style="border:1px solid #dadce0;">{pedidoNumero}</td>
+                                            </tr>
+                                            <tr style="background-color:#f8f9fa;">
+                                                <td style="border:1px solid #dadce0; font-weight:bold;">Total:</td>
+                                                <td style="border:1px solid #dadce0; font-weight:bold; font-size:16px;">{total}</td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin:0 0 16px 0; font-size:14px;">Encontrarás el documento completo en formato PDF adjunto a este correo.</p>
+                                        <p style="margin:0 0 16px 0; font-size:14px;">Gracias por confiar en nosotros.</p>
+                                        <p style="margin:0 0 24px 0; font-size:14px; font-weight:bold;">Equipo de PymeCore</p>
+
+                                        <div style="border-top:1px solid #dadce0; margin:0 0 12px 0; font-size:0; line-height:0;">&nbsp;</div>
+                                        <p style="margin:0; font-size:12px; color:#5f6368;">Este es un correo automático. Por favor, no respondas a este mensaje.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
                 """;
         }
     }

@@ -280,40 +280,80 @@ namespace PymeCore.Services
             return (true, presupuesto.Numero, decision);
         }
 
+        // Mismo verde que usa FacturaPdfDocument para el banner "FACTURA PAGADA"
+        // (QuestPDF.Helpers.Colors.Green.Darken1 = #43A047) y que FacturaService usa en su
+        // correo, para que los dos correos de PymeCore compartan el mismo color corporativo.
+        private const string ColorCorporativo = "#43A047";
+
         private static string ConstruirCuerpoHtml(Presupuesto presupuesto, string urlAceptar, string urlRechazar)
         {
             var cultura = CultureInfo.GetCultureInfo("es-ES");
             var sb = new StringBuilder();
 
-            sb.Append($"<h2>Presupuesto {WebUtility.HtmlEncode(presupuesto.Numero)}</h2>");
-            sb.Append($"<p>Fecha: {presupuesto.Fecha.ToLocalTime():dd/MM/yyyy}</p>");
+            var numero = WebUtility.HtmlEncode(presupuesto.Numero);
+            var clienteNombre = WebUtility.HtmlEncode(presupuesto.Cliente!.Nombre);
+            var urlAceptarSegura = WebUtility.HtmlEncode(urlAceptar);
+            var urlRechazarSegura = WebUtility.HtmlEncode(urlRechazar);
 
-            sb.Append("<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;\">");
-            sb.Append("<thead><tr><th>Producto</th><th>Descripción</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>");
-            sb.Append("<tbody>");
+            // Tabla exterior al 100% que centra una tabla interior de máximo 680px (mismo
+            // patrón "bulletproof" de email que FacturaService.ConstruirCuerpoHtml).
+            sb.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;\">");
+            sb.Append("<tr><td align=\"center\" style=\"padding:24px 16px;\">");
+            sb.Append("<table role=\"presentation\" width=\"680\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\" style=\"width:100%; max-width:680px; font-family: Arial, Helvetica, sans-serif; color:#202124;\">");
+            sb.Append("<tr><td style=\"padding:24px;\">");
+
+            sb.Append($"<h1 style=\"margin:0 0 12px 0; font-size:22px; color:{ColorCorporativo};\">PymeCore</h1>");
+            sb.Append($"<div style=\"border-top:3px solid {ColorCorporativo}; margin:0 0 20px 0; font-size:0; line-height:0;\">&nbsp;</div>");
+
+            sb.Append($"<p style=\"margin:0 0 16px 0; font-size:14px;\">Hola, {clienteNombre}:</p>");
+            sb.Append($"<p style=\"margin:0 0 20px 0; font-size:14px;\">Te enviamos el presupuesto {numero} para que puedas revisarlo.</p>");
+
+            sb.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"border-collapse:collapse; margin:0 0 20px 0; font-size:14px;\">");
+            sb.Append("<tr style=\"background-color:#f8f9fa;\">");
+            sb.Append("<th align=\"left\" style=\"border:1px solid #dadce0;\">Producto</th>");
+            sb.Append("<th align=\"left\" style=\"border:1px solid #dadce0;\">Descripción</th>");
+            sb.Append("<th align=\"left\" style=\"border:1px solid #dadce0;\">Cantidad</th>");
+            sb.Append("<th align=\"left\" style=\"border:1px solid #dadce0;\">Precio unitario</th>");
+            sb.Append("<th align=\"left\" style=\"border:1px solid #dadce0;\">Subtotal</th>");
+            sb.Append("</tr>");
+
             foreach (var linea in presupuesto.Lineas)
             {
                 sb.Append("<tr>");
-                sb.Append($"<td>{WebUtility.HtmlEncode(linea.Producto?.Nombre)}</td>");
-                sb.Append($"<td>{WebUtility.HtmlEncode(linea.Descripcion)}</td>");
-                sb.Append($"<td>{linea.Cantidad}</td>");
-                sb.Append($"<td>{linea.PrecioUnitario.ToString("N2", cultura)} €</td>");
-                sb.Append($"<td>{linea.Subtotal.ToString("N2", cultura)} €</td>");
+                sb.Append($"<td style=\"border:1px solid #dadce0;\">{WebUtility.HtmlEncode(linea.Producto?.Nombre)}</td>");
+                sb.Append($"<td style=\"border:1px solid #dadce0;\">{WebUtility.HtmlEncode(linea.Descripcion)}</td>");
+                sb.Append($"<td style=\"border:1px solid #dadce0;\">{linea.Cantidad}</td>");
+                sb.Append($"<td style=\"border:1px solid #dadce0;\">{linea.PrecioUnitario.ToString("N2", cultura)} €</td>");
+                sb.Append($"<td style=\"border:1px solid #dadce0;\">{linea.Subtotal.ToString("N2", cultura)} €</td>");
                 sb.Append("</tr>");
             }
-            sb.Append("</tbody></table>");
 
-            sb.Append($"<p><strong>Total: {presupuesto.Total.ToString("N2", cultura)} €</strong></p>");
+            sb.Append("<tr style=\"background-color:#f8f9fa;\">");
+            sb.Append("<td colspan=\"4\" align=\"center\" style=\"border:1px solid #dadce0; font-weight:bold;\">Total:</td>");
+            sb.Append($"<td style=\"border:1px solid #dadce0; font-weight:bold; font-size:16px;\">{presupuesto.Total.ToString("N2", cultura)} €</td>");
+            sb.Append("</tr>");
+            sb.Append("</table>");
 
             if (!string.IsNullOrWhiteSpace(presupuesto.Observaciones))
             {
-                sb.Append($"<p>Observaciones: {WebUtility.HtmlEncode(presupuesto.Observaciones)}</p>");
+                sb.Append($"<p style=\"margin:0 0 20px 0; font-size:14px;\">Observaciones: {WebUtility.HtmlEncode(presupuesto.Observaciones)}</p>");
             }
 
-            sb.Append("<p>");
-            sb.Append($"<a href=\"{WebUtility.HtmlEncode(urlAceptar)}\" style=\"display:inline-block;padding:10px 20px;margin-right:10px;background-color:#198754;color:#ffffff;text-decoration:none;border-radius:4px;\">Aceptar presupuesto</a>");
-            sb.Append($"<a href=\"{WebUtility.HtmlEncode(urlRechazar)}\" style=\"display:inline-block;padding:10px 20px;background-color:#dc3545;color:#ffffff;text-decoration:none;border-radius:4px;\">Rechazar presupuesto</a>");
-            sb.Append("</p>");
+            sb.Append("<p style=\"margin:0 0 16px 0; font-size:14px;\">Puedes aceptar o rechazar el presupuesto utilizando los siguientes botones.</p>");
+
+            sb.Append("<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 24px 0;\"><tr>");
+            sb.Append($"<td style=\"padding-right:10px;\"><a href=\"{urlAceptarSegura}\" style=\"display:inline-block;padding:10px 20px;background-color:{ColorCorporativo};color:#ffffff;text-decoration:none;border-radius:4px;font-size:14px;\">Aceptar presupuesto</a></td>");
+            sb.Append($"<td><a href=\"{urlRechazarSegura}\" style=\"display:inline-block;padding:10px 20px;background-color:#dc3545;color:#ffffff;text-decoration:none;border-radius:4px;font-size:14px;\">Rechazar presupuesto</a></td>");
+            sb.Append("</tr></table>");
+
+            sb.Append("<p style=\"margin:0 0 16px 0; font-size:14px;\">Gracias por confiar en nosotros.</p>");
+            sb.Append("<p style=\"margin:0 0 24px 0; font-size:14px; font-weight:bold;\">Equipo de PymeCore</p>");
+
+            sb.Append("<div style=\"border-top:1px solid #dadce0; margin:0 0 12px 0; font-size:0; line-height:0;\">&nbsp;</div>");
+            sb.Append("<p style=\"margin:0; font-size:12px; color:#5f6368;\">Este es un correo automático. Por favor, no respondas a este mensaje.</p>");
+
+            sb.Append("</td></tr></table>");
+            sb.Append("</td></tr></table>");
 
             return sb.ToString();
         }
