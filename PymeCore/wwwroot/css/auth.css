@@ -1,0 +1,33 @@
+.auth-split {
+    min-height: 100vh;
+}
+
+.auth-visual {
+    flex: 0 0 55%;
+    max-width: 55%;
+    color: #fff;
+    background-image: linear-gradient(rgba(10, 15, 25, .55), rgba(10, 15, 25, .55)), url('/images/login-erp.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.auth-visual-caption h2 {
+    max-width: 28rem;
+}
+
+.auth-form-panel {
+    flex: 0 0 45%;
+    max-width: 45%;
+}
+
+.auth-form-wrapper {
+    width: 100%;
+    max-width: 380px;
+}
+
+@media (max-width: 767.98px) {
+    .auth-form-panel {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}

@@ -47,6 +47,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<ProductoService>();
@@ -56,7 +57,8 @@ builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<FacturaService>();
 builder.Services.AddScoped<FacturaSnapshotService>();
 builder.Services.AddScoped<FacturaPdfService>();
-builder.Services.AddScoped<IEmailSender, EmailService>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailSender>(sp => sp.GetRequiredService<EmailService>());
 builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection("EmpresaOptions"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 

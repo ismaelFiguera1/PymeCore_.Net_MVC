@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using PymeCore.Models;
@@ -118,29 +119,66 @@ namespace PymeCore.Controllers
         public async Task<IActionResult> Enviar(int id)
         {
             var (ok, error) = await _presupuestoService.EnviarAsync(id);
-            if (ok) TempData["Success"] = "Presupuesto enviado al cliente.";
+            if (ok) TempData["Success"] = "Presupuesto enviado al email del cliente.";
             else TempData["Error"] = error;
             return RedirectToAction(nameof(Details), new { id });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Aceptar(int id)
+        // Página pública (sin login) a la que llega el cliente desde los enlaces del correo.
+        // Solo muestra la confirmación; en esta fase no cambia ningún dato.
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> Responder(string? token, string? decision)
         {
-            var (ok, error) = await _presupuestoService.AceptarAsync(id);
-            if (ok) TempData["Success"] = "Presupuesto aceptado.";
-            else TempData["Error"] = error;
-            return RedirectToAction(nameof(Details), new { id });
+            if (decision != "aceptar" && decision != "rechazar")
+                return View(new ResponderPresupuestoViewModel { EsValido = false });
+
+            var presupuesto = await _presupuestoService.ValidarTokenRespuestaAsync(token);
+            if (presupuesto is null)
+                return View(new ResponderPresupuestoViewModel { EsValido = false });
+
+            var vm = new ResponderPresupuestoViewModel
+            {
+                EsValido = true,
+                Token = token!,
+                Numero = presupuesto.Numero,
+                ClienteNombre = presupuesto.Cliente?.Nombre,
+                Fecha = presupuesto.Fecha,
+                Observaciones = presupuesto.Observaciones,
+                Total = presupuesto.Total,
+                Decision = decision,
+                Lineas = presupuesto.Lineas.Select(l => new ResponderPresupuestoLineaViewModel
+                {
+                    Producto = l.Producto?.Nombre ?? string.Empty,
+                    Descripcion = l.Descripcion,
+                    Cantidad = l.Cantidad,
+                    PrecioUnitario = l.PrecioUnitario,
+                    Subtotal = l.Subtotal
+                }).ToList()
+            };
+
+            return View(vm);
         }
 
+        // POST público (sin login) que confirma la decisión mostrada en Responder.cshtml. La
+        // identidad de quien responde se garantiza únicamente con el token del correo, no con
+        // una sesión de PymeCore, así que no redirige a ninguna página que exija haber iniciado sesión.
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Rechazar(int id)
+        public async Task<IActionResult> ConfirmarRespuesta(string? token, string? decision)
         {
-            var (ok, error) = await _presupuestoService.RechazarAsync(id);
-            if (ok) TempData["Success"] = "Presupuesto rechazado.";
-            else TempData["Error"] = error;
-            return RedirectToAction(nameof(Details), new { id });
+            var (ok, numero, decisionConfirmada) = await _presupuestoService.ConfirmarRespuestaAsync(token, decision);
+
+            if (!ok)
+                return View("Responder", new ResponderPresupuestoViewModel { EsValido = false });
+
+            var vm = new RespuestaConfirmadaViewModel
+            {
+                Numero = numero,
+                Decision = decisionConfirmada!
+            };
+            return View(vm);
         }
 
         [HttpPost]
