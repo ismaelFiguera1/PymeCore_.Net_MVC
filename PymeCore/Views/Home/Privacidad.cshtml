@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Política de privacidad";
+    Layout = "/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="mx-auto" style="max-width: 640px;">
+        <h1 class="h3 mb-3">Política de privacidad</h1>
+
+        <p class="text-muted">
+            PymeCore es una aplicación de gestión (mini ERP) para uso interno de una empresa.
+            Esta página explica qué datos trata la aplicación y cómo se usan.
+        </p>
+
+        <h2 class="h5 mt-4">Qué datos se tratan</h2>
+        <p>
+            Los datos de clientes, proveedores, productos, presupuestos, pedidos y facturas
+            son introducidos y gestionados por el propio usuario de la aplicación. PymeCore
+            no comparte estos datos con terceros ni los utiliza con fines distintos a la
+            gestión de la empresa dentro de la propia aplicación.
+        </p>
+
+        <h2 class="h5 mt-4">Envío de correos electrónicos</h2>
+        <p>
+            PymeCore envía correos electrónicos (por ejemplo, presupuestos y facturas a
+            clientes) a través de la API de Gmail, utilizando exclusivamente el permiso de
+            envío (<code>gmail.send</code>). La aplicación no lee, modifica ni elimina
+            correos de la cuenta de Gmail utilizada para el envío.
+        </p>
+
+        <h2 class="h5 mt-4">Contacto</h2>
+        <p class="mb-0">
+            Para cualquier consulta sobre esta política de privacidad, puedes escribir a
+            <a href="mailto:ismaelfiguera112@gmail.com">ismaelfiguera112@gmail.com</a>.
+        </p>
+    </div>
+</div>
