@@ -162,7 +162,9 @@ Los PDF de factura se generan con **QuestPDF** a partir del snapshot histórico 
 
 ## Envío de correos
 
-Implementado con **MailKit**, con dos flujos distintos:
+Implementado con **Gmail API** mediante HTTPS y **OAuth 2.0** (permiso `gmail.send` únicamente), con acceso offline (`refresh_token`) para que la aplicación pueda enviar sin que el desarrollador inicie sesión cada vez. Los correos se construyen con **MimeKit** y se envían codificados en base64 a través de la API, sin conexión SMTP: es el motivo de esta migración, ya que el plan actual de Railway bloquea SMTP.
+
+Dos flujos distintos:
 
 - **Presupuestos**: correo HTML con el detalle de líneas y dos botones (aceptar / rechazar) que enlazan a una página pública protegida por el token de un solo uso.
 - **Facturas**: correo HTML con el PDF de la factura adjunto.
@@ -177,7 +179,7 @@ Implementado con **MailKit**, con dos flujos distintos:
 | ORM / BD | Entity Framework Core 8, PostgreSQL (Npgsql) |
 | Autenticación | ASP.NET Core Identity (roles) |
 | PDF | QuestPDF |
-| Email | MailKit |
+| Email | Gmail API (OAuth 2.0) + MimeKit |
 | Frontend | Razor Views, Bootstrap, plantilla AdminLTE, jQuery |
 | Tests | xUnit, EF Core InMemory / Sqlite |
 | Despliegue | Docker (rama `production`), Railway |
@@ -213,7 +215,7 @@ PymeCore/
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - PostgreSQL en ejecución (local o remoto)
-- Una cuenta SMTP para el envío de correos (por ejemplo, Gmail con contraseña de aplicación)
+- Una cuenta de Gmail con acceso a Gmail API (OAuth 2.0), con credenciales `ClientId`/`ClientSecret` de Google Cloud y un `refresh_token` con el permiso `gmail.send`
 
 ---
 
@@ -228,12 +230,11 @@ EmpresaOptions:Nombre
 EmpresaOptions:Cif
 EmpresaOptions:Direccion
 
-EmailSettings:Host
-EmailSettings:Port
-EmailSettings:Username
-EmailSettings:Password
-EmailSettings:FromEmail
-EmailSettings:FromName
+GmailApi:ClientId
+GmailApi:ClientSecret
+GmailApi:RefreshToken
+GmailApi:FromEmail
+GmailApi:FromName
 ```
 
 Además, para que arranque la siembra del administrador inicial (`IdentitySeeder`) hace falta:
