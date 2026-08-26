@@ -61,6 +61,7 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IEmailSender>(sp => sp.GetRequiredService<EmailService>());
 builder.Services.Configure<EmpresaOptions>(builder.Configuration.GetSection("EmpresaOptions"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.Configure<GmailApiSettings>(builder.Configuration.GetSection("GmailApi"));
 
 builder.Services.AddAuthorization(options =>
 {

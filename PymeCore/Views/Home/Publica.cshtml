@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "PymeCore";
+    Layout = "/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="mx-auto" style="max-width: 640px;">
+        <h1 class="h3 mb-3">PymeCore</h1>
+        <p class="text-muted">
+            PymeCore es un mini ERP para pequeñas y medianas empresas: gestión de clientes,
+            proveedores, productos, stock, presupuestos, pedidos y facturación desde una
+            única aplicación.
+        </p>
+
+        <p>
+            Esta página es de acceso público. El resto de la aplicación requiere iniciar sesión.
+        </p>
+
+        <ul class="list-unstyled">
+            <li class="mb-2">
+                <a asp-area="Identity" asp-page="/Account/Login">Iniciar sesión</a>
+            </li>
+            <li class="mb-2">
+                <a asp-controller="Home" asp-action="Privacidad">Política de privacidad</a>
+            </li>
+        </ul>
+
+        <p class="text-muted small mb-0">
+            Contacto: <a href="mailto:ismaelfiguera112@gmail.com">ismaelfiguera112@gmail.com</a>
+        </p>
+    </div>
+</div>
